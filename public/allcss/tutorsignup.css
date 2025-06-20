@@ -1,0 +1,184 @@
+.signup-container {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.signup-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.signup-header h2 {
+    color: #126cfc;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.signup-header p {
+    color: #000;
+    font-weight: 400;
+}
+
+/* FORM */
+.form {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 450;
+    color: #000;
+}
+
+.form input,
+.form select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.form input:focus,
+.form select:focus {
+    border-color: #126cfc;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(33, 95, 250, 0.2);
+}
+
+
+
+.skill-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            min-height: 30px;
+        }
+        .skill-tag {
+            background: #3180fe;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .skill-tag-remove {
+            margin-left: 6px;
+            cursor: pointer;
+            color: #000;
+        }
+        .skill-tag-remove:hover {
+            color: #fff;
+        }
+        .hidden {
+            display: none;
+        }
+
+.tutor-registration a{
+    color: #130bf8;
+    text-decoration: none;
+    font-weight: 500;
+}
+.tutor-registration a:hover {
+    text-decoration: underline;
+}
+
+.input-group {
+    margin-bottom: 20px;
+    
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 450;
+    color: #000;
+}
+
+input[type="text"],
+input[type="file"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.file-box {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    text-align: center;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.file-box:hover {
+    border-color: #126cfc;
+    background-color: #fff;
+}
+
+.file-box i {
+    font-size: 48px;
+    color: #126cfc;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* SUBMIT BTN */
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: #126cfc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.submit-btn:hover {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 0 0 1px #126cfc;
+}
+
+
+.login-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #000;
+}
+
+.login-link a {
+    color: #130bf8;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+.go_back_text a{
+    color: #a50cf7;
+}

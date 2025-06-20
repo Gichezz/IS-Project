@@ -1,0 +1,319 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100%;
+  overflow-x: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background: url('/images/pexels-darlene-alderson-7971695.jpg') no-repeat center center fixed;
+  background-size: cover;
+  min-height: 100vh; 
+  color: white;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 109vh; 
+  background-color: rgba(0, 0, 0, 0.2);
+  z-index: -1;
+}
+
+/* HEADER styles */
+/* HEADER styles */
+header {
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px 35px; /* Reduced height */
+  position: relative;
+  z-index: 10;
+  
+}
+
+#web-name {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+#web-name i.fa-handshake-angle {
+  color: #000; /* Adjust for white background */
+  font-size: 2.5rem; /* Smaller icon */
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+}
+
+#web-name h1 {
+  font-size: 32px;
+  font-weight: 750;
+}
+
+.blue {
+  color: #126cfc;
+}
+
+.black {
+  color: black;
+}
+
+/* NAV */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-links {
+  display: flex;
+  gap: 35px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-links a {
+  color: black;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #126cfc;
+}
+/* Style for the Login Button */
+.login-btn {
+  padding: 6px 20px;
+  background-color: #126cfc;
+  color: black;
+  font-weight: 600;
+  border-radius: 1px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+}
+
+.login-btn:hover {
+  background-color: transparent;
+  color: #126cfc;
+  border: 1px solid #000;
+  transform: scale(1.0);
+}
+
+
+/* TOP BODY SECTION */
+#topbody-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 20px;
+  margin-top: 150px;
+}
+
+#topbody-section h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #126cfc;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0);
+  animation: fadeIn 0.8s ease-out;
+}
+
+#topbody-section h2 {
+  color: white;
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.8s ease-out;
+}
+
+#topbody-section h3 {
+  color: white;
+  font-size: 3.5rem;
+  font-weight: 700;
+  opacity: 0.9;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.8s ease-out 0.3s both;
+}
+
+#signup-btn {
+  margin-top: 40px;
+}
+
+#signup-btn a {
+  background-color: #126cfc;
+  color: black;
+  padding: 10px 20px;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 2px;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+#signup-btn a:hover {
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #000;
+  transform: scale(1);
+}
+
+
+
+/*ABOUT US*/
+
+  #aboutus-section {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 60px;
+    margin-top: 100px;
+    background-color: white;
+    color: black;
+    gap: 40px;
+  }
+  
+  #aboutus-img img {
+    width: auto;
+      height: 400px; 
+      width: 500px;
+      border-radius: 10px;
+      object-fit: cover; 
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  #aboutus-description {
+    flex: 1;
+  }
+  #aboutus-description h1 {
+    text-align: center;
+    background-color: #126cfc; 
+    color: #000;              
+    font-weight: bold;        
+    padding: 5px 10px;         
+    display: inline-block;     
+    font-size: 2.0rem;
+    margin-bottom: 20px;
+    
+  }
+  
+  #aboutus-description h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #222;
+  }
+  
+  #aboutus-description p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #333;
+  }
+
+
+  /*FOOTER*/
+#footer-section {
+    background-color: #9b9b9b;
+    padding: 50px 20px;
+    flex: 1 1 220px;
+    min-width: 200px;
+  }
+  
+  #footer-container {
+    max-width: 1200px;
+    margin: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 30px;
+  }
+  
+  
+  #footer-section h2 {
+    font-size: 47px;
+    margin-bottom: 15px;
+  }
+  
+  #footer-section h3 {
+    color: #126cfc;
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  
+  #footer-section .blue {
+    color: #126cfc;
+  }
+  
+  #footer-section .white {
+    color: #fff;
+    font-weight: bold;
+  }
+  
+  #footer-section p {
+    color: #ccc;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+  
+  #footer-section ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  #footer-section ul li {
+    margin-bottom: 10px;
+    color: #fff;
+    font-size: 14px;
+  }
+  
+  #footer-section ul li i {
+    color: #126cfc;
+    margin-right: 8px;
+  }
+  #footer-quick-links a,
+#footer-popular-links a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+#footer-quick-links a:hover,
+#footer-popular-links a:hover {
+    color: #2749e1;
+    text-decoration: underline;
+}
+  #social-icons {
+    margin-top: 20px;
+  }
+  
+  #social-icons a {
+    display: inline-block;
+    margin-right: 10px;
+    color: #126cfc;
+    border: 1px solid #126cfc;
+    border-radius: 50%;
+    padding: 10px;
+    transition: all 0.3s ease;
+  }
+  
+  #social-icons a:hover {
+    background-color: #126cfc;
+    color: #111;
+  }
+  
+  
+

@@ -1,0 +1,358 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100%;
+  overflow-x: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #e1e0e0;
+  background-size: cover;
+  min-height: 100vh; 
+  color: white;
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+body.loaded {
+  opacity: 1;
+}
+
+
+
+/* HEADER styles */
+/* HEADER styles */
+header {
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px 35px; /* Reduced height */
+  position: relative;
+  z-index: 10;
+  
+}
+
+#web-name {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+#web-name i.fa-handshake-angle {
+  color: #000; /* Adjust for white background */
+  font-size: 2.5rem; /* Smaller icon */
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+}
+
+#web-name h1 {
+  font-size: 32px;
+  font-weight: 750;
+}
+
+.blue {
+  color: #126cfc;
+}
+
+.black {
+  color: black;
+}
+
+/* NAV */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-links {
+  display: flex;
+  gap: 35px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-links a {
+  color: black;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #126cfc;
+}
+/* Style for the Login Button */
+.login-btn {
+  padding: 6px 20px;
+  background-color: #126cfc;
+  color: black;
+  font-weight: 600;
+  border-radius: 1px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+}
+
+.login-btn:hover {
+  background-color: transparent;
+  color: #126cfc;
+  border: 1px solid #000;
+  transform: scale(1.0);
+}
+
+<<<<<<< HEAD:public/allcss/experts.css
+
+
+=======
+>>>>>>> 5df999b3693b2d72cb91d9032934cbcf009208f3:allcss/experts.css
+/* Search Bar */
+.search-container {
+    width: 100%;
+    padding: 2rem 0;
+    background: #dbdbdb;
+    text-align: center;
+}
+
+.search-container input {
+    padding: 0.75rem 1rem;
+    width: 60%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    font-size: 1rem;
+}
+
+
+/* Expert Card Styling */
+.experts-section{
+    background: #dbdbdb;
+}
+
+.experts-section h1{
+    color: #000;
+    text-align: center;
+}
+
+.experts-container{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  padding: 40px;
+  justify-content: flex-start;
+}
+.expert-card {
+  flex: 0 0 calc(33.333% - 20px); /* 3 per row */
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; 
+  gap: 15px;
+  box-sizing: border-box;
+  transition: transform 0.3s ease;
+}
+
+.expert-card:hover {
+  transform: translateY(-5px);
+}
+
+.expert-card.fade-in {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expert-info {
+  display: flex;
+  flex: 1 1 60%;
+  gap: 15px;
+}
+
+.expert-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 2px solid #000;
+}
+
+.expert-details h5 {
+  font-size: 1.1rem;
+  margin: 0;
+  color: #000;
+}
+
+.expert-details h6 {
+  font-size: 0.9rem;
+  margin: 5px 0;
+  color: #000;
+}
+
+.expert-details span {
+  display: block;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.expert-actions {
+  flex: 1 1 35%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.save-btn i {
+  color: #aaa;
+  font-size: 1.2rem;
+  transition: color 0.3s;
+}
+
+.save-btn:hover i {
+  color: #f70c0c;
+}
+.like-count {
+  font-size: 14px;
+  color: #5039e6;
+  opacity: 1; /* Make sure it's not hidden */
+}
+
+.apply-btn {
+  background: #000;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: transform 0.3s;
+}
+
+.apply-btn:hover {
+  transform: scale(1.05);
+}
+
+.expert-actions small {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+
+/*FOOTER*/
+#footer-section {
+<<<<<<< HEAD:public/allcss/experts.css
+  background-color: #9b9b9b;
+=======
+  background-color: #868585;
+>>>>>>> 5df999b3693b2d72cb91d9032934cbcf009208f3:allcss/experts.css
+  padding: 50px 20px;
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+#footer-container {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+
+#footer-section h2 {
+  font-size: 47px;
+  margin-bottom: 15px;
+}
+
+#footer-section h3 {
+  color: #015ae7;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+#footer-section .blue {
+  color: #126cfc;
+}
+
+#footer-section .white {
+  color: #fff;
+  font-weight: bold;
+}
+
+#footer-section p {
+  color: #fff;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+#footer-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+#footer-section ul li {
+  margin-bottom: 10px;
+  color: #fff;
+  font-size: 14px;
+  
+}
+
+#footer-section ul li i {
+  color: #015ae7;
+  margin-right: 8px;
+}
+
+#footer-quick-links a,
+#footer-popular-links a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+#footer-quick-links a:hover,
+#footer-popular-links a:hover {
+    color: #2749e1;
+    text-decoration: underline;
+}
+
+#social-icons {
+  margin-top: 20px;
+}
+
+#social-icons a {
+  display: inline-block;
+  margin-right: 10px;
+  color: #015ae7;
+  border: 1px solid #015ae7;
+  border-radius: 50%;
+  padding: 10px;
+  transition: all 0.3s ease;
+}
+
+#social-icons a:hover {
+  background-color: #126cfc;
+  color: #111;
+}
+

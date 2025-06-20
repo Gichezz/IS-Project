@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Swap Messaging</title>
+    <link rel="stylesheet" href="/allcss/connect.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-exchange-alt"></i> SwapSecure Chat</h1>
+            <div class="user-info">
+                <span id="current-user">User123</span>
+                <div class="status-indicator online"></div>
+            </div>
+        </header>
+
+        <div class="chat-container">
+            <aside class="sidebar">
+                <div class="search-container">
+                    <input type="text" placeholder="Search conversations..." id="search-conversations">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="conversation-list" id="conversation-list">
+                    <!-- Conversations will be added here dynamically -->
+                </div>
+                <button class="new-chat-btn" id="new-chat-btn">
+                    <i class="fas fa-plus"></i> New Conversation
+                </button>
+            </aside>
+
+            <main class="chat-area">
+                <div class="chat-header">
+                    <div class="chat-partner-info">
+                        <div class="partner-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h3 id="chat-partner-name">Select a conversation</h3>
+                            <span class="partner-status" id="chat-partner-status">offline</span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        
+                        <button class="btn-icon" id="swap-details-btn" title="View Swap Details">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messages-container">
+                    <div class="empty-state">
+                        <i class="fas fa-comments"></i>
+                        <p>Select a conversation to start messaging</p>
+                    </div>
+                </div>
+
+                <div class="message-input-area">
+                    <div class="encryption-indicator">
+                        <i class="fas fa-lock"></i>
+                        <span>End-to-end encrypted</span>
+                    </div>
+                    <div class="input-container">
+                        <button class="btn-icon" id="attach-btn" title="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="text" id="message-input" placeholder="Type your secure message...">
+                        <button class="btn-icon" id="send-btn" title="Send Message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <aside class="swap-details-sidebar">
+                <div class="swap-details-header">
+                    <h3>Swap Details</h3>
+                    <button class="btn-icon" id="close-details-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="swap-details-content" id="swap-details-content">
+                    <div class="empty-details">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No swap selected</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- New Conversation Modal -->
+    <div class="modal" id="new-chat-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Start New Conversation</h3>
+                <button class="close-modal" id="close-new-chat-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="search-user">Search User</label>
+                    <input type="text" id="search-user" placeholder="Enter username or email">
+                </div>
+                <div class="user-search-results" id="user-search-results">
+                    <!-- Search results will appear here -->
+                </div>
+                <div class="form-group">
+                    <label for="initial-message">Initial Message</label>
+                    <textarea id="initial-message" placeholder="Write your first message..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancel-new-chat">Cancel</button>
+                <button class="btn-primary" id="confirm-new-chat">Start Conversation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Swap Details Modal -->
+    <div class="modal" id="swap-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Swap Agreement Details</h3>
+                <button class="close-modal" id="close-swap-details-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="swap-details-modal-body">
+                <!-- Swap details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="close-swap-modal">Close</button>
+                <button class="btn-primary" id="agree-to-swap">Agree to Swap</button>
+            </div>
+        </div>
+    </div>
+
+    <script src ="/alljs/connect.js"></script>
+</body>
+</html>

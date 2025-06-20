@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillsSwap - Complete Payment</title>
+    <link rel="stylesheet" href="/allcss/payment.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Complete Your Payment</h1>
+    </div>
+    
+    <div class="payment-container">
+        <!-- Left Column - Payment Summary -->
+        <div class="payment-summary">
+            <h2>Order Summary</h2>
+            <div class="summary-row">
+                <span class="summary-label">Service</span>
+                <span class="summary-value" id="service-name">Loading...</span>
+            </div>
+            
+            
+            
+            <div class="summary-row total-row">
+                <span class="summary-label">Total due today</span>
+                <span class="summary-value" id="payment-amount">Loading...</span>
+            </div>
+        </div>
+        
+        <!-- Right Column - Payment Form -->
+        <div class="payment-right-col">
+            <h2>Contact information</h2>
+            <div class="contact-info">
+                <table class="info-table">
+                    <tr>
+                        <td class="info-label">Payment method</td>
+                        <td>M-Pesa</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h2>Payment details</h2>
+            <div class="payment-form">
+                <form id="paymentForm">
+                    <div class="form-group">
+                        <label for="phone">M-Pesa Phone Number</label>
+                        <input type="tel" id="phone" name="phone" placeholder="254712345678" required>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="payButton">Pay <span id="pay-button-amount">KES Amount</span></button>
+                </form>
+                
+                
+        
+        <p id="status"></p> <!-- Shows status (waiting/success/cancelled) -->
+<div id="loadingIndicator" style="display:none;">Processing...</div>
+<div id="confirmationMessage" style="display:none;">Payment Complete. Thank you!</div>
+
+    </div>
+    
+     
+  <script src="/alljs/payment.js"></script>
+</body>
+</html>
