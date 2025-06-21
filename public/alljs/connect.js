@@ -101,10 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Sample data - in a real app, this would come from a backend
             const currentUser = {
                 id: 'user1',
-                name: 'User123',
+                name: 'Zarian',
                 avatar: 'U',
                 online: true,
-                email: 'swapmaster@example.com',
+                email: 'zarianachize@gmail.com',
                 isTeacher: true
             };
 
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: 'user2', name: 'SwapMaster', avatar: 'S', online: true, email: 'swapmaster@example.com', isTeacher: false },
                 { id: 'user3', name: 'TradePro', avatar: 'T', online: false, email: 'tradepro@example.com', isTeacher: true },
                 { id: 'user4', name: 'BarterKing', avatar: 'B', online: true, email: 'barterking@example.com', isTeacher: false },
-                { id: 'user5', name: 'Zarian', avatar: 'Z', online: false, email: 'zarian.ochieng@strathmore.edu', isTeacher: true }
+                { id: 'user5', name: 'gichezz', avatar: 'Z', online: false, email: 'ryan.gicheru@strathmore.edu', isTeacher: true }
             ];
 
             const conversations = [

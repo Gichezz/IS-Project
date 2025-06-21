@@ -55,28 +55,32 @@
 }
 
 
-
-.skills-selection {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.skill-tag {
-    background: #f0f0f0;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.skill-tag:hover,
-.skill-tag.selected {
-    background: #126cfc;
-    color: white;
-}
+.skill-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            min-height: 30px;
+        }
+        .skill-tag {
+            background: #3180fe;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .skill-tag-remove {
+            margin-left: 6px;
+            cursor: pointer;
+            color: #000;
+        }
+        .skill-tag-remove:hover {
+            color: #fff;
+        }
+        .hidden {
+            display: none;
+        }
 
 
 
