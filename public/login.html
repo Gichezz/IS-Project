@@ -17,7 +17,7 @@
             <p>Continue your skill trading journey</p>
         </div>
         
-        <form id="loginForm" method="POST">
+        <form id="loginForm" method="POST" action="/login">
             <div class="form">
                 <label for="email">Email Address</label>
                 <input type="email" id="loginEmail" name="email" required>
@@ -46,47 +46,6 @@
         </form>
     </div>
 
-    <div id="toast" class="toast"></div>
-
-    <script>
-        document.getElementById("loginForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            const email = document.getElementById("loginEmail").value.trim();
-            const password = document.getElementById("loginPassword").value.trim();
-
-            try {
-                const response = await fetch("/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
-
-                if (response.ok && response.redirected) {
-                    showToast("Login successful!");
-                    setTimeout(() => {
-                        window.location.href = response.url;
-                    }, 1500);
-                } else {
-                    const errorText = await response.text();
-                    showToast("Login failed: " + errorText, true);
-                }
-            } catch (error) {
-                alert("An error occurred: " + error.message);
-            }
-        });
-
-        function showToast(message, isError = false) {
-            const toast = document.getElementById("toast");
-            toast.textContent = message;
-            toast.style.backgroundColor = isError ? "#e74c3c" : "#2ecc71"; // red for error, green for success
-            toast.classList.add("show");
-
-            setTimeout(() => {
-                toast.classList.remove("show");
-            }, 3000); // hide after 3s
-        }
-    </script>
     
 </body>
 </html>

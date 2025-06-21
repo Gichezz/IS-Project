@@ -3,10 +3,13 @@ let mysql = require("mysql2");
 let db = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "admin",
-    port: 3306,
+    password: "",
+    port: 3307,
     database: "skillswap_db" 
 });
+
+
+
 
 db.connect(function (err) {
     if (err) throw err;
@@ -16,6 +19,26 @@ db.connect(function (err) {
    //     if (err) throw err;
    //     console.log("MPESA TABLE CREATED SUCCESSFULLY");
    // });
+
+
+   let createMessagesTable = `
+    CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id VARCHAR(50),
+        sender_id VARCHAR(50),
+        text TEXT,
+        time_sent DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+`;
+
+db.query(createMessagesTable, (err) => {
+    if (err) throw err;
+    console.log("Messages table created or exists.");
 });
+
+});
+
+
+
 
 module.exports = db;
