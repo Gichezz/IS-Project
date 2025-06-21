@@ -1,3 +1,75 @@
+// Connect to the server using Socket.IO
+// This establishes a WebSocket connection to the server that served the HTML file
+const socket = io(); // Automatically connects to the backend
+
+/**
+ * Sends a chat message when the user triggers the send action
+ */
+function sendMessage() {
+    // Get and trim the message text from the input field
+    const messageText = messageInput.value.trim();
+
+    // If message is empty or no active conversation is selected, do nothing
+    if (!messageText || !activeConversation) return;
+
+    // Create a new message object with required properties
+    const newMessage = {
+        sender: currentUser.id,               // Current user's ID
+        text: messageText,                    // The message content
+        time: getCurrentTime(),               // Timestamp (e.g., "12:30 PM")
+        conversationId: activeConversation.id // ID of the current conversation
+    };
+
+    // Emit the message to the server via the WebSocket
+    socket.emit("chat message", newMessage);
+
+    // Immediately display the message in the sender's chat UI
+    const conversation = conversations.find(c => c.id === activeConversation.id);
+    if (conversation) {
+        // Add the message to the conversation's message list with a "delivered" status
+        conversation.messages.push({ ...newMessage, status: "delivered" });
+
+        // Update preview info for the conversation list
+        conversation.lastMessage = messageText;
+        conversation.lastMessageTime = "Just now";
+
+        // Re-render the chat window with the updated messages
+        renderMessages(conversation.messages);
+    }
+
+    // Clear the message input field
+    messageInput.value = "";
+}
+
+/**
+ * Handles incoming messages from other users through the socket
+ */
+socket.on("chat message", (msg) => {
+    // Find the conversation that the incoming message belongs to
+    const conv = conversations.find(c => c.id === msg.conversationId);
+
+    // If the conversation exists
+    if (conv) {
+        // Add the incoming message to its message list with a "delivered" status
+        conv.messages.push({ ...msg, status: "delivered" });
+
+        // Update the conversation's last message and time preview
+        conv.lastMessage = msg.text;
+        conv.lastMessageTime = "Just now";
+
+        // If this conversation is currently open, re-render its messages
+        if (activeConversation?.id === conv.id) {
+            renderMessages(conv.messages);
+        }
+
+        // Refresh the conversation list to show updated previews
+        renderConversationList();
+    }
+});
+
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
             const conversationList = document.getElementById('conversation-list');
@@ -29,10 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Sample data - in a real app, this would come from a backend
             const currentUser = {
                 id: 'user1',
-                name: 'User123',
+                name: 'Zarian',
                 avatar: 'U',
                 online: true,
-                email: 'user123@example.com',
+                email: 'zarianachize@gmail.com',
                 isTeacher: true
             };
 
@@ -40,91 +112,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: 'user2', name: 'SwapMaster', avatar: 'S', online: true, email: 'swapmaster@example.com', isTeacher: false },
                 { id: 'user3', name: 'TradePro', avatar: 'T', online: false, email: 'tradepro@example.com', isTeacher: true },
                 { id: 'user4', name: 'BarterKing', avatar: 'B', online: true, email: 'barterking@example.com', isTeacher: false },
-                { id: 'user5', name: 'ExchangeGuru', avatar: 'E', online: false, email: 'exchangeguru@example.com', isTeacher: true }
+                { id: 'user5', name: 'gichezz', avatar: 'Z', online: false, email: 'ryan.gicheru@strathmore.edu', isTeacher: true }
             ];
 
             const conversations = [
-                {
-                    id: 'conv1',
-                    userId: 'user2',
-                    lastMessage: 'Sounds good! When can we meet?',
-                    lastMessageTime: '10:30 AM',
-                    unread: 0,
-                    swapDetails: {
-                        id: 'swap1',
-                        yourItem: 'Vintage Camera',
-                        theirItem: 'Guitar',
-                        yourItemDesc: 'Like new condition, comes with original case',
-                        theirItemDesc: 'Acoustic guitar, lightly used',
-                        status: 'negotiating',
-                        images: [
-                            'https://via.placeholder.com/150?text=Camera',
-                            'https://via.placeholder.com/150?text=Guitar'
-                        ]
-                    },
-                    messages: [
-                        {
-                            id: 'msg1',
-                            sender: 'user2',
-                            text: 'Hi there! Interested in your vintage camera',
-                            time: '10:00 AM',
-                            status: 'read'
-                        },
-                        {
-                            id: 'msg2',
-                            sender: 'user1',
-                            text: 'Hello! Yes, it\'s available. What do you have to trade?',
-                            time: '10:05 AM',
-                            status: 'read'
-                        },
-                        {
-                            id: 'msg3',
-                            sender: 'user2',
-                            text: 'I have a guitar in good condition. Interested?',
-                            time: '10:15 AM',
-                            status: 'read'
-                        },
-                        {
-                            id: 'msg4',
-                            sender: 'user1',
-                            text: 'That sounds interesting. Can you send some photos?',
-                            time: '10:20 AM',
-                            status: 'read'
-                        },
-                        {
-                            id: 'msg5',
-                            sender: 'user2',
-                            text: 'Sure, I\'ll send them shortly',
-                            time: '10:25 AM',
-                            status: 'read'
-                        },
-                        {
-                            id: 'msg6',
-                            sender: 'user2',
-                            text: 'Sounds good! When can we meet?',
-                            time: '10:30 AM',
-                            status: 'delivered'
-                        }
-                    ]
-                },
+                
                 {
                     id: 'conv2',
                     userId: 'user3',
                     lastMessage: 'I can add $20 to make it fair',
                     lastMessageTime: 'Yesterday',
                     unread: 2,
-                    swapDetails: {
-                        id: 'swap2',
-                        yourItem: 'Designer Watch',
-                        theirItem: 'Smartwatch',
-                        yourItemDesc: 'Luxury brand, barely worn',
-                        theirItemDesc: 'Latest model with all features',
-                        status: 'negotiating',
-                        images: [
-                            'https://via.placeholder.com/150?text=Watch',
-                            'https://via.placeholder.com/150?text=Smartwatch'
-                        ]
-                    },
+                    
                     messages: [
                         {
                             id: 'msg1',
@@ -373,33 +372,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Load a conversation
-            function loadConversation(conversationId) {
-                const conversation = conversations.find(c => c.id === conversationId);
-                if (!conversation) return;
+function loadConversation(conversationId) {
+    // Find the conversation object using its ID
+    const conversation = conversations.find(c => c.id === conversationId);
+    if (!conversation) return;
 
-                activeConversation = conversation;
-                const user = users.find(u => u.id === conversation.userId);
+    // Set the active conversation globally
+    activeConversation = conversation;
 
-                // Update UI
-                chatPartnerName.textContent = user.name;
-                chatPartnerStatus.textContent = user.online ? 'online' : 'offline';
-                chatPartnerStatus.className = user.online ? 'partner-status online' : 'partner-status offline';
+    // Find the user associated with this conversation
+    const user = users.find(u => u.id === conversation.userId);
 
-                // Render messages
-                renderMessages(conversation.messages);
+    // Update UI with chat partner details
+    chatPartnerName.textContent = user.name;
+    chatPartnerStatus.textContent = user.online ? 'online' : 'offline';
+    chatPartnerStatus.className = user.online ? 'partner-status online' : 'partner-status offline';
 
-                // Mark messages as read
-                markMessagesAsRead(conversationId);
+    // 🟡 Fetch messages from your backend (via API) using the conversation ID
+    fetch(`/api/messages/${conversation.id}`)
+        .then(res => res.json())
+        .then(dbMessages => {
+            // Map database rows to your internal message format
+            conversation.messages = dbMessages.map(m => ({
+                id: m.id,
+                sender: m.sender_id,
+                text: m.text,
+                time: new Date(m.time_sent).toLocaleTimeString(), // Format timestamp
+                status: "read"
+            }));
 
-                // Highlight active conversation
-                document.querySelectorAll('.conversation-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                document.querySelector(`.conversation-item[data-id="${conversationId}"]`)?.classList.add('active');
+            // Render the fetched messages in the chat area
+            renderMessages(conversation.messages);
+        })
+        .catch(err => {
+            console.error("Failed to load messages from server:", err);
+        });
 
-                // Load swap details
-                loadSwapDetails(conversation.swapDetails);
-            }
+    // Mark messages as read (update UI and possibly backend)
+    markMessagesAsRead(conversationId);
+
+    // Highlight the selected conversation in the sidebar
+    document.querySelectorAll('.conversation-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`.conversation-item[data-id="${conversationId}"]`)?.classList.add('active');
+
+    // Load any related swap/trade details in the sidebar
+    loadSwapDetails(conversation.swapDetails);
+}
+
 
             // Render messages
             function renderMessages(messages) {
@@ -500,10 +521,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (searchTerm.length < 2) return;
 
-                const filteredUsers = users.filter(user => 
-                    user.name.toLowerCase().includes(searchTerm) || 
-                    (user.email && user.email.toLowerCase().includes(searchTerm))
-                    .filter(user => user.id !== currentUser.id));
+                const filteredUsers = users
+    .filter(user => user.id !== currentUser.id)
+    .filter(user => 
+        user.name.toLowerCase().includes(searchTerm) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm))
+    );
+
 
                 if (filteredUsers.length === 0) {
                     userSearchResults.innerHTML = '<div class="empty-result">No users found</div>';
@@ -531,55 +555,83 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Create new conversation
-            function createNewConversation() {
-                const userName = searchUserInput.value.trim();
-                const initialMsg = initialMessage.value.trim();
-                
-                if (!userName || !initialMsg) {
-                    alert('Please select a user and write an initial message');
-                    return;
-                }
+          function createNewConversation() {
+    const userName = searchUserInput.value.trim();
+    const initialMsg = initialMessage.value.trim();
+    
+    if (!userName || !initialMsg) {
+        alert('Please select a user and write an initial message');
+        return;
+    }
 
-                const user = users.find(u => u.name === userName);
-                if (!user) {
-                    alert('User not found');
-                    return;
-                }
+    const user = users.find(u => u.name === userName);
+    if (!user) {
+        alert('User not found');
+        return;
+    }
 
-                // Check if conversation already exists
-                const existingConv = conversations.find(c => c.userId === user.id);
-                if (existingConv) {
-                    loadConversation(existingConv.id);
-                    newChatModal.classList.remove('show');
-                    return;
-                }
+    // Check if conversation already exists
+    const existingConv = conversations.find(c => c.userId === user.id);
+    if (existingConv) {
+        loadConversation(existingConv.id);
+        newChatModal.classList.remove('show');
+        return;
+    }
 
-                // Create new conversation
-                const newConversation = {
-                    id: `conv${Date.now()}`,
-                    userId: user.id,
-                    lastMessage: initialMsg,
-                    lastMessageTime: 'Just now',
-                    unread: 0,
-                    swapDetails: null,
-                    messages: [
-                        {
-                            id: `msg${Date.now()}`,
-                            sender: currentUser.id,
-                            text: initialMsg,
-                            time: getCurrentTime(),
-                            status: 'delivered'
-                        }
-                    ]
-                };
+    const newConvId = `conv${Date.now()}`;
+    const messageId = `msg${Date.now()}`;
 
-                conversations.push(newConversation);
-                renderConversationList();
-                loadConversation(newConversation.id);
-                newChatModal.classList.remove('show');
-                searchUserInput.value = '';
-                initialMessage.value = '';
+    // Create new conversation object (frontend copy)
+    const newConversation = {
+        id: newConvId,
+        userId: user.id,
+        lastMessage: initialMsg,
+        lastMessageTime: 'Just now',
+        unread: 0,
+        swapDetails: null,
+        messages: [
+            {
+                id: messageId,
+                sender: currentUser.id,
+                text: initialMsg,
+                time: getCurrentTime(),
+                status: 'delivered'
             }
+        ]
+    };
+
+    // 🔴 Save initial message to backend DB
+    fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            conversationId: newConvId,
+            senderId: currentUser.id,
+            userId: newConversation.userId,
+            initialMessage: initialMsg
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            console.log("✅ Conversation and message saved to DB");
+        } else {
+            console.warn("⚠️ Could not save to DB");
+        }
+    })
+    .catch(err => {
+        console.error("❌ DB Error:", err);
+    });
+
+    // Update frontend
+    conversations.push(newConversation);
+    renderConversationList();
+    loadConversation(newConversation.id);
+    newChatModal.classList.remove('show');
+    searchUserInput.value = '';
+    initialMessage.value = '';
+}
+
 
             // Show swap details
             function showSwapDetails() {
