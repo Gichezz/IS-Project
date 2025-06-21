@@ -143,6 +143,12 @@ textarea {
     display: block;
 }
 
+.upload-tip {
+    font-size: 13px;
+    color: #555;
+    margin-top: 5px;
+}
+
 /* SUBMIT BTN */
 .submit-btn {
     width: 100%;

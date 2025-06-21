@@ -16,7 +16,7 @@
             <h3>Expert Student Signup</h3>
         </div>
         
-        <form id="signupForm">
+        <form id="signupForm" method="POST" action="/register-expert" enctype="multipart/form-data">
             <div class="form">
                 <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" required>
@@ -50,10 +50,11 @@
 
                 <div class="input-group">
                     <label for="file">Upload Files</label>
-                    <div class="file-box" id="file-area" onclick="document.getElementById('file').click();">
+                    <div class="file-box" id="file-area">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Drag & drop files here or click to browse</p>
-                        <input type="file" id="file" name="files[]" multiple style="display: none;" required>
+                        <p class="upload-tip">Hold <strong>Ctrl</strong> (or <strong>Shift</strong>) to select multiple files</p>
+                        <input type="file" id="file" name="files" multiple style="display: none;" required>
                     </div>
                 </div>
 
@@ -74,6 +75,72 @@
             </div>
         </form>
     </div>
+
+    <script>
+        document.getElementById("signupForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const description = document.getElementById("description").value.trim();
+            const selectedSkills = document.getElementById("selectedSkillsInput").value.trim();
+            const fileInput = document.getElementById("file");
+
+            const emailRegex = /^[^\s@]+@strathmore\.edu$/;
+
+            // Validate fields
+            if (!name || !email || !password || !description) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (!emailRegex.test(email)) {
+                alert("Please use a valid Strathmore University email (@strathmore.edu).");
+                return;
+            }
+
+            if (!selectedSkills) {
+                alert("Please select at least one skill.");
+                return;
+            }
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Please upload at least one file.");
+                return;
+            }
+
+            const formData = new FormData(document.getElementById("signupForm"));
+
+            try {
+                const response = await fetch("/register-expert", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.redirected) {
+                    alert("Account created successfully!");
+                    window.location.href = response.url;
+                } else {
+                    const msg = await response.text();
+                    alert("Registration failed: " + msg);
+                }
+            } catch (error) {
+                alert("An error occurred: " + error.message);
+            }
+        });
+
+        // Handle file upload
+        document.getElementById('file-area').addEventListener('click', function () {
+            const fileInput = document.getElementById('file');
+            // Reset file input to allow re-uploading the same file
+            fileInput.value = '';
+            fileInput.click();
+        });
+
+    </script>
+
+
 
     <script src="/alljs/transformation.js"></script>
 </body>

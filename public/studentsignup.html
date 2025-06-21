@@ -9,7 +9,6 @@
 </head>
 
 <body>
-
     <div class="signup-container">
         <div class="signup-header">
             <h2><i class="fas fa-handshake"></i> Join SkillSwap</h2>
@@ -17,7 +16,7 @@
             <h3>Student Signup</h3>
         </div>
         
-        <form id="signupForm">
+        <form id="signupForm" method="POST" action="/register-student">
             <div class="form">
                 <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" required>
@@ -48,6 +47,55 @@
         </form>
     </div>
 
+    <script>
+        document.getElementById("signupForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            // Validate all fields
+            if (!name || !email || !password) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            // Email format check
+            const emailRegex = /^[^\s@]+@strathmore\.edu$/;
+            if (!emailRegex.test(email)) {
+                alert("Please use a valid Strathmore University email (@strathmore.edu).");
+                return;
+            }
+
+            // Prepare form data
+            const formData = new URLSearchParams();
+            formData.append("name", name);
+            formData.append("email", email);
+            formData.append("password", password);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+
+                if (response.redirected) {
+                    alert("Account created successfully!");
+                    window.location.href = response.url;
+                } else {
+                    const msg = await response.text();
+                    alert("Registration failed: " + msg);
+                }
+            } catch (error) {
+                alert("An error occurred: " + error.message);
+            }
+        });
+    </script>
+
     <script src="/alljs/transformation.js"></script>
+
 </body>
 </html>
