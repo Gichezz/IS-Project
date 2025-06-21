@@ -17,10 +17,10 @@ const upload = multer({ storage });
 
 // STUDENT REGISTRATION 
 router.post('/register-student', async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, selectedSkills } = req.body;
 
     // Backend field validation
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !selectedSkills) {
         return res.status(400).send('Please fill in all required fields.');
     }
 
@@ -32,9 +32,9 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = `INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'student')`;
+        const sql = `INSERT INTO users (name, email, password, role, skills) VALUES (?, ?, ?, 'student', ?)`;
 
-        db.query(sql, [name, email, hashedPassword], (err, result) => {
+        db.query(sql, [name, email, hashedPassword, selectedSkills], (err, result) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).send('Email already in use.');
