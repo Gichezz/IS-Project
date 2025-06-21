@@ -95,26 +95,36 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
 
 
 // LOGIN
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    db.query(`SELECT * FROM users WHERE email = ?`, [email], async (err, results) => {
-        if (err || results.length === 0) return res.status(401).send('User not found');
+    try {
+        const [rows] = await db.promise().query('SELECT * FROM users WHERE email = ?', [email]);
 
-        const user = results[0];
+        if (rows.length === 0) {
+            return res.status(401).send('Invalid email or password.');
+        }
+
+        const user = rows[0];
         const passwordMatch = await bcrypt.compare(password, user.password);
 
-        if (!passwordMatch) return res.status(403).send('Incorrect password');
-
-        // Redirect based on user role
-        if (user.role === 'student') {
-            res.redirect('/home.html');
-        } else if (user.role === 'expert') {
-            res.redirect('/expert-landing.html'); // create this file later
-        } else {
-            res.status(400).send('Unknown User');
+        if (!passwordMatch) {
+            return res.status(401).send('Invalid email or password.');
         }
-    });
+
+        // Role-based redirect
+        if (user.role === 'student') {
+            return res.redirect('/home.html');
+        } else if (user.role === 'expert') {
+            return res.redirect('/expert-dashboard.html');
+        } else {
+            return res.status(400).send('Unknown user role.');
+        }
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Server error. Please try again.');
+    }
 });
 
 module.exports = router;
