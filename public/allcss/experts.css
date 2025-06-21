@@ -106,11 +106,6 @@ nav {
   transform: scale(1.0);
 }
 
-<<<<<<< HEAD:public/allcss/experts.css
-
-
-=======
->>>>>>> 5df999b3693b2d72cb91d9032934cbcf009208f3:allcss/experts.css
 /* Search Bar */
 .search-container {
     width: 100%;
@@ -261,11 +256,7 @@ nav {
 
 /*FOOTER*/
 #footer-section {
-<<<<<<< HEAD:public/allcss/experts.css
   background-color: #9b9b9b;
-=======
-  background-color: #868585;
->>>>>>> 5df999b3693b2d72cb91d9032934cbcf009208f3:allcss/experts.css
   padding: 50px 20px;
   flex: 1 1 220px;
   min-width: 200px;
@@ -355,4 +346,3 @@ nav {
   background-color: #126cfc;
   color: #111;
 }
-
