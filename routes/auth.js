@@ -112,6 +112,14 @@ router.post('/login', async (req, res) => {
             return res.status(401).send('Invalid email or password.');
         }
 
+        // Save login session
+        req.session.user = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        };
+
         // Role-based redirect
         if (user.role === 'student') {
             return res.redirect('/home.html');
@@ -125,6 +133,27 @@ router.post('/login', async (req, res) => {
         console.error(error);
         return res.status(500).send('Server error. Please try again.');
     }
+});
+
+// Add a logout route
+router.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) return res.status(500).send('Could not log out.');
+    res.redirect('/login.html');
+  });
+});
+
+// Middleware to check session (for any protected routes)
+function ensureAuthenticated(req, res, next) {
+  if (req.session.user) {
+    return next();
+  }
+  res.redirect('/login.html');
+}
+
+// Example protected route (for profile page)
+router.get('/profile', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/profile.html'));
 });
 
 module.exports = router;

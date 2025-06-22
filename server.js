@@ -4,8 +4,18 @@ const express=require ("express");
 const app = express();
 const path = require('path');
 const authRoutes = require('./routes/auth');
+const sessionRoutes = require('./routes/sessionRoutes');
+const session = require("express-session");
 
-
+//Session setup
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "mysecretkey",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }, // 1 day
+  })
+);
 
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
@@ -25,6 +35,7 @@ const port=process.env.PORT;
 
 // Routes
 app.use('/', authRoutes);
+app.use(sessionRoutes);
 
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");

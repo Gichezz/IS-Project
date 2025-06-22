@@ -145,16 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             });
 
-
-
-
-
-
-
-
-
 //drag-and-drop file uploading for your HTML element:
-
 document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('file');
     const fileArea = document.getElementById('file-area');
