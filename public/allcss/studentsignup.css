@@ -82,6 +82,29 @@
             display: none;
         }
 
+.skill-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    min-height: 30px;
+}
+.skill-tag {
+    background: #3180fe;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+.skill-tag-remove {
+    margin-left: 6px;
+    cursor: pointer;
+    color: #000;
+}
+.skill-tag-remove:hover {
+    color: #fff;
+}
 
 
 .tutor-registration a{
@@ -131,4 +154,28 @@
 }
 .go_back_text a{
     color: #a50cf7;
+}
+
+.toast {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 16px;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.4s ease, bottom 0.4s ease;
+}
+
+.toast.show {
+  visibility: visible;
+  opacity: 1;
+  bottom: 50px;
 }

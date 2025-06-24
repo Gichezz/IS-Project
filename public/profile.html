@@ -1,38 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>User Profile - SkillSwap</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSwap</title>
   <link rel="stylesheet" href="/allcss/profile.css">
-  <script src="https://kit.fontawesome.com/f096034737.js" crossorigin="anonymous"></script>
 </head>
 <body>
-
   <div class="profile-container">
-    <!-- Profile Info -->
     <div class="profile-header">
-      <img src="../images/pexels-olly-3872246.jpg" alt="Profile Picture" class="profile-pic">
-      <div class="user-details">
-        <h2>Jane Akinyi</h2>
-        <p>Email: jane@example.com</p>
+      <img src="/images/default-profile.png" alt="Profile Picture" class="profile-pic">
+      <h2 class="user-name">[User Name]</h2>
+      <p class="user-email">[User Email]</p>
+    </div>
+
+    <!-- For Students -->
+    <div class="student-section" style="display: none;">
+      <h3>Favourite Skills</h3>
+      <ul class="favourite-skills">
+        <li>Skill A</li>
+        <li>Skill B</li>
+      </ul>
+
+      <h3>My Sessions</h3>
+      <div class="session-list">
+        <div class="session-item">
+          <p><strong>Skill:</strong> Baking</p>
+          <p><strong>Expert:</strong> John Doe</p>
+          <p><strong>Status:</strong> Accepted</p>
+          <button class="mark-completed-btn">Mark as Completed</button>
+        </div>
       </div>
     </div>
 
-    <!-- Skills Learnt -->
-    <div class="skills-section">
-      <h3>Skills Learnt</h3>
-      <ul class="skills-list">
-        <li>Baking</li>
-        <li>Music</li>
-        <li>Graphic Design</li>
+    <!-- For Experts -->
+    <div class="expert-section" style="display: none;">
+      <h3>Skills I Offer</h3>
+      <ul class="offered-skills">
+        <li>Web Development</li>
+        <li>AI & ML</li>
       </ul>
+      <a href="/upload-skill.html" class="upload-skill-btn">Upload New Skill</a>
+    </div>
+    <div class="go_back_text">
+      <a href="home.html">Go Back</a>
     </div>
 
-    <!-- Add New Skill Button -->
-    <div class="upload-section">
-      <a href="addSkillForm.html" class="upload-button">Upload a Skill</a>
-    </div>
-  </div>
+   </div>
 
+  <script src="/alljs/profile.js"></script>
 </body>
 </html>

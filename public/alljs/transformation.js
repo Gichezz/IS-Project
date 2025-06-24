@@ -40,10 +40,3 @@ const h2transformation=document.getElementsByTagName('h2');
         h3transform.style.transform = 'scale(0.9)';
     });
  });
-
-
-
-
-
-
-

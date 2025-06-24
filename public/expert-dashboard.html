@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkillSwap</title>
+  <link rel="stylesheet" href="/allcss/expert-dashboard.css">
+</head>
+<body>
+  <header>
+    <h1>Welcome, Expert!</h1>
+    <a href="logout.html" class="logout-btn">Logout</a>
+  </header>
+
+  <main>
+    <h2>Pending Session Requests</h2>
+    <div class="session-list">
+      <!-- Individual session cards will go here -->
+      <div class="session-card" data-session-id="1">
+        <div class="session-info">
+          <h3>Artificial Intelligence</h3>
+          <p><strong>Email:</strong> student@example.com</p>
+          <p><strong>Time:</strong> 2025-06-24 10:00 AM</p>
+          <p class="status pending">Status: Pending</p>
+        </div>
+        <div class="session-actions">
+          <button class="accept-btn">Accept</button>
+          <button class="reject-btn">Reject</button>
+        </div>
+      </div>
+
+        <!-- Session Card 2 -->
+        <div class="session-card" data-session-id="2">
+            <div class="session-info">
+            <h3>Robotics</h3>
+            <p><strong>Email:</strong> student2@example.com</p>
+            <p><strong>Time:</strong> 2025-06-24 2:00 PM</p>
+            <p class="status pending">Status: Pending</p>
+            </div>
+            <div class="session-actions">
+            <button class="accept-btn">Accept</button>
+            <button class="reject-btn">Reject</button>
+            </div>
+        </div>
+        <!-- Session Card 3 -->
+
+        <div class="session-card" data-session-id="3">
+            <div class="session-info">
+            <h3>Web Development</h3>
+            <p><strong>Email:</strong> student3@example.com</p>
+            <p><strong>Time:</strong> 2025-06-25 11:30 AM</p>
+            <p class="status pending">Status: Pending</p>
+            </div>
+            <div class="session-actions">
+            <button class="accept-btn">Accept</button>
+            <button class="reject-btn">Reject</button>
+            </div>
+        </div>
+
+    </div>
+  </main>
+
+  <div id="redirectModal" class="modal">
+    <div class="modal-content">
+        <p>Redirecting to chat...</p>
+    </div>
+  </div>
+
+  <script src="/alljs/expert-dashboard.js"></script>
+</body>
+</html>

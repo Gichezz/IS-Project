@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillSwap - Sign Up</title>
+    <title>SkillSwap</title>
     <link rel="stylesheet" href="/allcss/studentsignup.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -16,7 +16,7 @@
             <h3>Student Signup</h3>
         </div>
         
-        <form id="signupForm" method="POST" action="/register-student">
+        <form id="signupForm" method="POST">
             <div class="form">
                 <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" required>
@@ -24,32 +24,30 @@
             
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required>
-                
-            <label>Select  Skill</label>
-                <div style="position: relative;">
-                    <select id="skills" class="skills-dropdown">
-                        <option value="">Select Favourite Skill </option>
-                        <option value="web-dev">Web Development</option>
-                        <option value="design">Graphic Design</option>
-                        <option value="language">Language Teaching</option>
-                        <option value="music">Music Lessons</option>
-                        <option value="writing">Content Writing</option>
-                        <option value="baking">Baking</option>
-                        <option value="painting">Painting</option>
-                        <option value="robotics">Robotics</option>
-                        <option value="music">Music</option>
-                        <option value="Ai">Artificial Intelligence</option>
-                        <option value="drawing">Drawing</option>
-                        <option value="crocheting">Crocheting</option>
-                    </select>
-                    <div class="skill-tags-container" id="skillTagsContainer"></div>
-                    <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
-                </div>
 
 
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
                 
+                <label>Select Your Favorite Skills</label>
+                <div style="position: relative;">
+                <select id="skills" class="skills-dropdown">
+                    <option value="">Select a skill</option>
+                    <option value="web-dev">Web Development</option>
+                    <option value="design">Graphic Design</option>
+                    <option value="language">Language Teaching</option>
+                    <option value="music">Music Lessons</option>
+                    <option value="writing">Content Writing</option>
+                    <option value="baking">Baking</option>
+                    <option value="painting">Painting</option>
+                    <option value="robotics">Robotics</option>
+                    <option value="ai">Artificial Intelligence</option>
+                    <option value="drawing">Drawing</option>
+                    <option value="crocheting">Crocheting</option>
+                </select>
+                <div class="skill-tags-container" id="skillTagsContainer"></div>
+                <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
+                </div>
            
                 <div class="tutor-registration">
                     <a href="tutorsignup.html">Register as tutor</a>
@@ -68,6 +66,8 @@
         </form>
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
         document.getElementById("signupForm").addEventListener("submit", async function (e) {
             e.preventDefault();
@@ -76,44 +76,57 @@
             const name = document.getElementById("name").value.trim();
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value.trim();
+            const selectedSkills = document.getElementById("selectedSkillsInput").value.trim();
 
             // Validate all fields
             if (!name || !email || !password) {
-                alert("Please fill in all required fields.");
+                showToast("Please fill in all fields.", true);
+                return;
+            }
+
+            if (!selectedSkills) {
+                showToast("Please select at least one skill.", true);
                 return;
             }
 
             // Email format check
             const emailRegex = /^[^\s@]+@strathmore\.edu$/;
             if (!emailRegex.test(email)) {
-                alert("Please use a valid Strathmore University email (@strathmore.edu).");
+                showToast("Use your Strathmore University email (@strathmore.edu).", true);
                 return;
             }
 
-            // Prepare form data
-            const formData = new URLSearchParams();
-            formData.append("name", name);
-            formData.append("email", email);
-            formData.append("password", password);
-
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch("/register-student", {
                     method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: formData
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password, selectedSkills })
                 });
 
                 if (response.redirected) {
-                    alert("Account created successfully!");
-                    window.location.href = response.url;
+                    showToast("Account created successfully!");
+                    setTimeout(() => {
+                        window.location.href = response.url;
+                    }, 1500);
                 } else {
                     const msg = await response.text();
-                    alert("Registration failed: " + msg);
+                    showToast("Registration failed: " + msg, true);
                 }
             } catch (error) {
-                alert("An error occurred: " + error.message);
+                showToast("An error occurred: " + error.message, true);
             }
         });
+        // Message of Success or Fail in creating account
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.style.backgroundColor = isError ? "#e74c3c" : "#2ecc71";
+            toast.classList.add("show");
+
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
     </script>
 
     <script src="/alljs/skillsTagging.js"></script>
