@@ -175,6 +175,22 @@ nav {
 
 
 
+/* Search Bar */
+.search-container {
+    width: 100%;
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.search-container input {
+    padding: 0.75rem 1rem;
+    width: 60%;
+    max-width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    font-size: 1rem;
+}
+
 
 
 

@@ -5,6 +5,9 @@ const path = require("path");
 const db = require('../database');
 const router = express.Router();
 
+
+
+
 // Multer storage config
 const storage = multer.diskStorage({
     destination: './uploads',
@@ -92,6 +95,37 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         res.status(500).send("Server error: " + err.message);
     }
 });
+
+// GET: Return Expert Info for Display Cards
+router.get('/expert-cards', (req, res) => {
+    const sql = `
+        SELECT id, name, skills, description 
+        FROM users 
+        WHERE role = 'expert'
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Add mock/default values to enrich the expert card format
+        const formatted = results.map((expert, index) => ({
+  id: expert.id,
+  name: expert.name,
+  skillDataAttr: expert.skills, // ← full raw string or array
+  description: expert.description,
+  location: "Nairobi, Kenya",
+  time: "Morning",
+  price: 1,
+  availableUntil: "01 Jan, 2045",
+  image: "/images/0684456b-aa2b-4631-86f7-93ceaf33303c.jpg"
+}));
+
+
+        res.json(formatted);
+    });
+});
+
+
 
 
 // LOGIN
