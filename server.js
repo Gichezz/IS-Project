@@ -6,6 +6,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
+const adminRoutes = require('./routes/adminRoutes');
 
 //Session setup
 app.use(
@@ -36,11 +37,16 @@ const port=process.env.PORT;
 // Routes
 app.use('/', authRoutes);
 app.use(sessionRoutes);
+app.use('/admin', adminRoutes);
 
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");
 app.use("/api/mpesa", mpesaRoutes); 
 
+// Check if session is active
+app.get('/check-session', (req, res) => {
+  res.json({ sessionActive: !!req.session.user });
+});
 
 //  Chat Messages API Route
 app.get("/api/messages/:conversationId", (req, res) => {

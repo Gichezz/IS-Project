@@ -17,24 +17,49 @@
       </div>
       <nav class="admin-nav">
         <ul>
+          <li><a href="#dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
           <li><a href="#expert-requests"><i class="fas fa-user-check"></i> Expert Requests</a></li>
+          <li><a href="#user-management"><i class="fas fas fa-users-cog"></i> User Management</a></li>
           <li><a href="#payments"><i class="fas fa-money-check-alt"></i> Payments</a></li>
-          <li><a href="#system"><i class="fas fa-cogs"></i> System Management</a></li>
-          <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+          <li><a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
       </nav>
     </aside>
 
     <!-- Main Content -->
     <main class="main-content">
-      <section id="expert-requests">
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="content-section">
+        <h2>Dashboard Overview</h2>
+        <div class="dashboard-overview">
+          <div class="overview-card">
+            <h3>Pending Approvals</h3>
+            <p id="pending-count">0</p>
+          </div>
+          <div class="overview-card">
+            <h3>Total Experts</h3>
+            <p id="experts-count">0</p>
+          </div>
+          <div class="overview-card">
+            <h3>Total Revenue</h3>
+            <p>KES <span id="total-revenue">0</span></p>
+          </div>
+        </div>
+        <div class="recent-activities">
+          <!-- Recent activities will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Expert Requests Section -->
+      <section id="expert-requests" class="content-section" style="display: none;">
         <h2>Pending Expert Approvals</h2>
-        <div id="expert-list">
+        <div id="expertRequestsContainer" class="requests-container">
           <!-- Dynamic content will be inserted here via JavaScript -->
         </div>
       </section>
 
-      <section id="payments">
+      <!-- Payments Section -->
+      <section id="payments" class="content-section" style="display: none;">
         <h2>Payment Overview</h2>
         <div class="payment-summary">
           <p><strong>Total Received:</strong> KES <span id="total-received">0</span></p>
@@ -42,10 +67,17 @@
         </div>
       </section>
 
-      <section id="system">
-        <h2>System Management</h2>
-        <p>General system information and settings can be managed here.</p>
+      <!-- User Management Section -->
+      <section id="user-management" class="content-section" style="display: none;">
+          <h2>User Management</h2>
+          <div class="search-container">
+              <input type="text" id="userSearch" placeholder="Search by name or email...">
+          </div>
+          <div id="usersContainer" class="users-container">
+              <!-- Users will be loaded here -->
+          </div>
       </section>
+
     </main>
   </div>
 
