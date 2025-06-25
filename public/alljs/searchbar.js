@@ -3,6 +3,9 @@ const searchInput = document.getElementById("searchInput");
 searchInput.addEventListener("input", function (){
     const query = this.value.toLowerCase();
     const cards = document.querySelectorAll(".expert-card");
+    
+
+
 
     cards.forEach(card => {
         const name = card.querySelector(".expert-name").textContent.toLowerCase();

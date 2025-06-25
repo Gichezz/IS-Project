@@ -42,6 +42,11 @@ app.use('/admin', adminRoutes);
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");
 app.use("/api/mpesa", mpesaRoutes); 
+const expertRouter = require('./routes/auth');
+app.use('/register-auth', expertRouter);  
+
+
+
 
 // Check if session is active
 app.get('/check-session', (req, res) => {

@@ -45,8 +45,16 @@
 </section>
 
 
+
+
 <!-- CATEGORIES SECTION -->
 <div id="category-section">
+
+  <!-- Search Bar -->
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Search for a skill...">
+  </div>
+
     <div id="category-body">
       <h2>Explore By Category</h2>
       <div id="category-row">
@@ -119,7 +127,7 @@
         <div id="card6">
           <a id="item6" href="experts.html?skill=web-app-development" aria-label="Web App Development Course">
             <i class="fa-solid fa-laptop-code"></i>
-            <p>Full-stack web application development</p>
+            <h3>Full-stack web application development</h3>
             <ul>
               <li>14-week bootcamp</li>
               <li>React, Node.js, MongoDB</li>
@@ -272,7 +280,10 @@
     </div>
   </section>
 
-  <script src ="/alljs/transformation.js"></script>
+<script src ="/alljs/transformation.js"></script>
+  <script src="alljs/skillsearchbar.js"></script>
+  <script src="alljs/renderExpertcards.js"></script>
   <script src="/alljs/userSession.js"></script>
+
 </body>
 </html>
