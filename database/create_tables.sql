@@ -3,10 +3,11 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'expert') NOT NULL,
+    role ENUM('student', 'expert', 'admin') NOT NULL,
     skills TEXT, 
     description TEXT, -- only used for experts
     files TEXT -- comma-separated list of uploaded file names
+    approved TINYINT(1) DEFAULT 0 -- 0 = not approved, 1 = approved
 );
 CREATE TABLE IF NOT EXISTS mpesa_payments (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -31,4 +32,12 @@ CREATE TABLE session_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (expert_id) REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS activities (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    type VARCHAR(50) NOT NULL, -- e.g., 'Registration', 'Expert Approval'
+    description TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );

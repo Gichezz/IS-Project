@@ -6,6 +6,7 @@ const socketIo = require("socket.io");
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
+
 const db = require("./database");
 require("dotenv").config();
 
@@ -24,6 +25,9 @@ const io = socketIo(server, {
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+
+const adminRoutes = require('./routes/adminRoutes');
 
 
 //Session setup
@@ -54,6 +58,7 @@ const port=process.env.PORT;
 // Routes
 app.use('/', authRoutes);
 app.use(sessionRoutes);
+app.use('/admin', adminRoutes);
 
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");
@@ -68,6 +73,10 @@ app.use('/register-auth', expertRouter);
 
 
 
+// Check if session is active
+app.get('/check-session', (req, res) => {
+  res.json({ sessionActive: !!req.session.user });
+});
 
 
 

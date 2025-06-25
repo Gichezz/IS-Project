@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const db = require('../database');
 const router = express.Router();
+const Activity = require('./activity');
 
 
 
@@ -44,8 +45,20 @@ router.post('/register-student', async (req, res) => {
                 }
                 return res.status(500).send('Database error: ' + err.message);
             }
-
-            res.redirect('/login.html');
+            const insertedId = result.insertId;
+            // Activity logging using Promise
+            Activity.create({
+                userId: insertedId,
+                type: 'New Registration',
+                description: `${name} (${email}) registered as student`
+            })
+            .then(() => {
+                res.redirect('/login.html');
+            })
+            .catch(err => {
+                console.error('Error creating activity:', err);
+                res.redirect('/login.html');
+            });
         });
     } catch (err) {
         res.status(500).send('Server error: ' + err.message);
@@ -88,13 +101,154 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 }
                 return res.status(500).send('Database error: ' + err.message);
             }
-
-            res.redirect('/login.html');
+            const insertedId = result.insertId;
+            Activity.create({
+                userId: insertedId,
+                type: 'New Registration',
+                description: `${name} (${email}) registered as expert`
+            })
+            .then(() => {
+                res.redirect('/login.html');
+            })
+            .catch(err => {
+                console.error('Error creating activity:', err);
+                res.redirect('/login.html');
+            });
         });
     } catch (err) {
         res.status(500).send("Server error: " + err.message);
     }
 });
+
+
+// ADMIN REGISTRATION
+router.post('/register-admin', async (req, res) => {
+    const { name, email, password, adminKey } = req.body;
+
+    // 1. Validate secret key
+    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+        return res.status(403).send("Invalid admin key");
+    }
+
+    // 2. Validate email format
+    const emailRegex = /^[^\s@]+@strathmore\.edu$/i;
+    if (!emailRegex.test(email)) {
+        return res.status(400).send("Must use Strathmore email");
+    }
+
+    try {
+        // 3. Check if admin exists
+        const [existing] = await db.promise().query(
+            'SELECT * FROM users WHERE email = ? AND role = "admin"', 
+            [email]
+        );
+        if (existing.length > 0) {
+            return res.status(400).send("Admin already exists");
+        }
+
+        // 4. Create admin
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const [result] = await db.promise().query(
+            `INSERT INTO users (name, email, password, role, approved, skills) 
+             VALUES (?, ?, ?, 'admin', 1, 'admin')`,
+            [name, email, hashedPassword]
+        );
+
+        const insertedId = result.insertId;
+        // 5. Log activity
+        try {
+            await Activity.create({
+                userId: insertedId,
+                type: 'New Registration',
+                description: `${name} (${email}) registered as admin`
+            });
+        } catch (err) {
+            console.error("Error creating activity:", err);
+        }
+
+        res.status(200).send("Admin created");
+    } catch (err) {
+        console.error("Admin creation error:", err);
+        res.status(500).send("Database error");
+    }
+});
+
+// Get pending experts
+router.get('/admin/pending-experts', ensureAuthenticated, (req, res) => {
+  // Verify admin role
+  if (req.session.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const sql = `SELECT * FROM users WHERE role = 'expert' AND approved = 0`;
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    res.json(results);
+  });
+});
+
+// Update user status (approve, reject, suspend, delete)
+router.put('/admin/users/:id/status', ensureAuthenticated, async (req, res) => {
+    // Verify admin role
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const userId = req.params.id;
+    const { status } = req.body;
+
+    try {
+        // Ensure status is valid
+        if (![-1, 0, 1].includes(Number(status))) {
+            return res.status(400).send("Invalid status value");
+        }
+
+        // Update user status
+        const [result] = await db.promise().query(
+            'UPDATE users SET approved = ? WHERE id = ?',
+            [status, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).send("User not found");
+        }
+
+        res.status(200).send("Status updated");
+    } catch (err) {
+        console.error("Status update error:", err);
+        res.status(500).send("Database error");
+    }
+});
+
+// GET all users (for admin user management)
+router.get('/admin/users', ensureAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    try {
+        const [users] = await db.promise().query(
+            'SELECT id, name, email, role, approved, skills FROM users'
+        );
+        res.json(users);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+
+// Auto-approve expert
+/* router.put('/api/approve-expert/:id', (req, res) => {
+  const expertId = req.params.id;
+  const sql = `UPDATE users SET approved = 1 WHERE id = ?`;
+
+  db.query(sql, [expertId], (err, result) => {
+    if (err) return res.status(500).json({ error: 'Failed to approve expert' });
+    res.json({ success: true });
+  });
+}); */
+
+
 
 // GET: Return Expert Info for Display Cards
 router.get('/expert-cards', (req, res) => {
@@ -127,7 +281,6 @@ router.get('/expert-cards', (req, res) => {
 
 
 
-
 // LOGIN
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -146,6 +299,20 @@ router.post('/login', async (req, res) => {
             return res.status(401).send('Invalid email or password.');
         }
 
+        // Block unapproved experts
+        if (user.role === 'expert' && user.approved !== 1) {
+            try {
+                await Activity.create({
+                    userId: user.id,
+                    type: 'Blocked Login',
+                    description: `${user.name} (${user.email}) attempted login before approval`
+                });
+            } catch (activityErr) {
+                console.error('Failed to log blocked login activity:', activityErr);
+            }
+            return res.status(403).send('Your account is pending for approval.');
+        }
+
         // Save login session
         req.session.user = {
             id: user.id,
@@ -159,6 +326,9 @@ router.post('/login', async (req, res) => {
             return res.redirect('/home.html');
         } else if (user.role === 'expert') {
             return res.redirect('/expert-dashboard.html');
+        }else if (user.role === 'admin'){
+            req.session.user = { ...user, isAdmin: true };
+            return res.redirect('/admin-dashboard.html');
         } else {
             return res.status(400).send('Unknown user role.');
         }
@@ -169,7 +339,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Add a logout route
+// logout route
 router.get('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) return res.status(500).send('Could not log out.');
