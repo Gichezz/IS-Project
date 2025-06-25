@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('paymentForm').addEventListener('submit', function (e) {
         e.preventDefault(); // Prevent page reload
 
-        // ✅ Validate phone number format (must be Safaricom)
+        // Validate phone number format (must be Safaricom)
         const phoneNumber = document.getElementById('phone').value.trim();
         if (!phoneNumber.match(/^2547\d{8}$/)) {
             alert("Please enter a valid Kenyan phone number starting with 2547...");
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const requestData = {
             phone: phoneNumber,
             amount: amount,
-            service: skillOnly, // ✅ send only "Ai"
+            service: skillOnly, // 
         };
 
         // Send STK Push request to your backend
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Hide loader
             document.getElementById('loadingIndicator').style.display = 'none';
 
-            // ✅ If STK push was successful
+            //  If STK push was successful
             if (data.success) {
                 const checkoutID = data.data.CheckoutRequestID;
 
@@ -74,18 +74,24 @@ document.addEventListener('DOMContentLoaded', function () {
                             console.log("📡 Polling response:", result);
 
                             if (result.found && result.status) {
-                                // ✅ Only stop polling if result is final (success or failed)
+                                //  Only stop polling if result is final (success or failed)
                                 if (["success", "failed"].includes(result.status)) {
                                     clearInterval(interval);
 
                                     if (result.status === "success") {
-                                        // ✅ Payment successful
+                                        //  Payment successful
                                         document.getElementById('paymentForm').style.display = 'none';
                                         document.getElementById('confirmationMessage').style.display = 'block';
-                                        document.getElementById('status').textContent = "✅ Payment Successful!";
+                                        document.getElementById('status').textContent = "Payment Successful!";
+
+                                      
+                                        // Now redirect
+                                          window.location.href = `connect.html`; 
+
+    
                                     } else {
-                                        // ❌ Payment failed or cancelled
-                                        document.getElementById('status').textContent = "❌ Payment Failed or Cancelled.";
+                                        //  Payment failed or cancelled
+                                        document.getElementById('status').textContent = " Payment Failed or Cancelled.";
                                         document.getElementById('payButton').disabled = false;
                                     }
                                 } else {
@@ -99,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         });
                 }, 3000); // ⏳ Check every 3 seconds
             } else {
-                // ❌ STK push failed on backend
+                //  STK push failed on backend
                 alert('Payment failed: ' + (data.message || 'Unknown error'));
                 document.getElementById('payButton').disabled = false;
             }

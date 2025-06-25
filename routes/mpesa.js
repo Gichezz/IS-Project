@@ -28,7 +28,7 @@ router.get("/password" , mpesaPassword);
 router.get("/payment-status/:checkoutID", checkPaymentStatus); 
 //route to initiate STK push but requires token first)
 router.post("/stk/push",token,stkPush);
-router.post('/stk/callback', mpesa.mpesaCallback);    // for /api/mpesa/stk/callback
+router.post('/stk/callback', express.json({ type: '*/*' }), mpesa.mpesaCallback);
 
 
 
