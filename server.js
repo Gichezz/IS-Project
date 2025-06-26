@@ -1,13 +1,35 @@
 //importing express
 const express=require ("express");
-//initialising express so that we can use it in our application
-const app = express();
 const path = require('path');
+const http = require("http");
+const socketIo = require("socket.io");
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
+
+const db = require("./database");
+require("dotenv").config();
+
+// ===================== Express App Setup =====================
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+
+
+// Middleware to parse JSON and URL-encoded data
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+
 const adminRoutes = require('./routes/adminRoutes');
 const expertRoutes = require('./routes/expertRoutes');
+
 
 //Session setup
 app.use(
@@ -15,14 +37,13 @@ app.use(
     secret: process.env.SESSION_SECRET || "mysecretkey",
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }, // 1 day
+    cookie: { maxAge: 24 * 60 * 60 * 1000 },// 1 day
+    httpOnly: true,
+      secure: false // Set to true if using HTTPS 
   })
 );
 
-// Middleware to parse JSON and URL-encoded data
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-require("dotenv").config();
+
 
 
 // Static folders
@@ -44,6 +65,10 @@ app.use('/api/expert', expertRoutes);
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");
 app.use("/api/mpesa", mpesaRoutes); 
+
+
+
+
 const expertRouter = require('./routes/auth');
 app.use('/register-auth', expertRouter);  
 
@@ -55,89 +80,200 @@ app.get('/check-session', (req, res) => {
   res.json({ sessionActive: !!req.session.user });
 });
 
-//  Chat Messages API Route
-app.get("/api/messages/:conversationId", (req, res) => {
-  const convId = req.params.conversationId;
 
-  const query = `SELECT * FROM messages WHERE conversation_id = ? ORDER BY time_sent ASC`;
-  db.query(query, [convId], (err, results) => {
-    if (err) return res.status(500).json({ error: "DB error" });
-    res.json(results);
-  });
-});
 
-//Create new conversation + initial message
-app.post("/api/conversations", (req, res) => {
-  const { conversationId, senderId, userId, initialMessage } = req.body;
-
-  if (!conversationId || !senderId || !userId || !initialMessage) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
-
-  // Optional: Insert conversation into a 'conversations' table (if you have one)
-  // For now we insert only the initial message
-  const insertMessage = `
-    INSERT INTO messages (conversation_id, sender_id, text)
-    VALUES (?, ?, ?)
-  `;
-  db.query(insertMessage, [conversationId, senderId, initialMessage], (err, result) => {
-    if (err) {
-      console.error(" Failed to save new conversation message:", err);
-      return res.status(500).json({ error: "DB error" });
+// ✅ Current User Session Route
+app.get("/api/users/current", async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      return res.status(401).json({ error: "Not logged in" });
     }
 
-    console.log(" New conversation started with message ID:", result.insertId);
-    res.status(200).json({ success: true });
-  });
-});
+    const userId = req.session.user.id;
+    const [rows] = await db.promise().query("SELECT * FROM users WHERE id = ?", [userId]);
 
-// ---- SOCKET.IO SETUP ----
-
-// 1. Import the built-in HTTP module (required to run Express + Socket.IO together)
-const http = require("http");
-// 2. Import Socket.IO library to enable real-time communication
-const socketIo = require("socket.io");
-// 3. Create an HTTP server using the existing Express app
-const server = http.createServer(app); // This wraps your Express app inside a Node HTTP server
-const db = require("./database"); // or your db file name
-
-
-// 4. Initialize Socket.IO and attach it to the HTTP server
-const io = socketIo(server, {
-  cors: {
-    origin: "*", // Allow connections from any origin (important if frontend is hosted elsewhere)
-    methods: ["GET", "POST"] // Allowed HTTP methods
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
-// 5. Handle new WebSocket connections
+// ✅ Get User by ID
+app.get("/api/users/:userId", async (req, res) => {
+  try {
+    const [users] = await db.promise().query(
+      `SELECT id, name, email, role, online_status FROM users WHERE id = ?`,
+      [req.params.userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(users[0]);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// ✅ Search Users
+app.get("/api/users/search/:query", async (req, res) => {
+  try {
+    const [users] = await db.promise().query(
+      `SELECT id, name, email, role FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 10`,
+      [`%${req.params.query}%`, `%${req.params.query}%`]
+    );
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ error: "Failed to search users" });
+  }
+});
+
+// ✅ Get Conversations
+app.get("/api/conversations/:userId", async (req, res) => {
+  try {
+    const [conversations] = await db.promise().query(`
+      SELECT c.id, 
+             u1.id as user1_id, u1.name as user1_name, u1.role as user1_role,
+             u2.id as user2_id, u2.name as user2_name, u2.role as user2_role,
+             (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+             (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+      FROM conversations c
+      JOIN users u1 ON c.user1_id = u1.id
+      JOIN users u2 ON c.user2_id = u2.id
+      WHERE c.user1_id = ? OR c.user2_id = ?
+      ORDER BY last_message_time DESC
+    `, [req.params.userId, req.params.userId]);
+
+    res.json(conversations);
+  } catch (error) {
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({ error: "Failed to fetch conversations" });
+  }
+});
+
+// ✅ Get Messages
+app.get("/api/messages/:conversationId", async (req, res) => {
+  try {
+    const [messages] = await db.promise().query(`
+      SELECT m.*, u.name as sender_name, u.role as sender_role
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.conversation_id = ?
+      ORDER BY m.created_at ASC
+    `, [req.params.conversationId]);
+
+    res.json(messages);
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
+// ✅ Create or Get Conversation
+app.post("/api/conversations", async (req, res) => {
+  const { user1Id, user2Id } = req.body;
+
+  try {
+    const [existing] = await db.promise().query(`
+      SELECT id FROM conversations 
+      WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
+    `, [user1Id, user2Id, user2Id, user1Id]);
+
+    if (existing.length > 0) {
+      return res.json({ conversationId: existing[0].id });
+    }
+
+    const [result] = await db.promise().query(
+      `INSERT INTO conversations (user1_id, user2_id) VALUES (?, ?)`,
+      [user1Id, user2Id]
+    );
+
+    res.json({ conversationId: result.insertId });
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    res.status(500).json({ error: "Failed to create conversation" });
+  }
+});
+
+// ===================== Socket.IO =====================
+const onlineUsers = new Map();
+
 io.on("connection", (socket) => {
-  console.log(" A user connected:", socket.id); // Log when a new user connects
+  console.log(`New connection: ${socket.id}`);
 
-  // Handle new chat messages
-  socket.on("chat message", (data) => {
-    console.log(" Message received via WebSocket:", data);
+  socket.on("authenticate", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    socket.broadcast.emit("user-status-changed", { userId, status: "online" });
+  });
 
-    const { conversationId, sender, text } = data;
+  socket.on("private-message", async ({ senderId, receiverId, content, conversationId }) => {
+    try {
+      const [result] = await db.promise().query(
+        "INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)",
+        [conversationId, senderId, content]
+      );
 
-    const query = `
-      INSERT INTO messages (conversation_id, sender_id, text)
-      VALUES (?, ?, ?)
-    `;
-    db.query(query, [conversationId, sender, text], (err, result) => {
-      if (err) {
-        console.error(" Error saving WebSocket message:", err);
-        return;
+      const message = {
+        id: result.insertId,
+        senderId,
+        content,
+        timestamp: new Date(),
+        conversationId
+      };
+
+      if (onlineUsers.has(receiverId)) {
+        io.to(onlineUsers.get(receiverId)).emit("new-message", message);
       }
-      console.log(" WebSocket message saved with ID:", result.insertId);
 
-      // Broadcast the message to all other connected clients (except sender)
-      socket.broadcast.emit("chat message", data);
-    });
+      socket.emit("new-message", message);
+    } catch (error) {
+      console.error("Error saving message:", error);
+      socket.emit("message-error", { error: "Failed to send message" });
+    }
+  });
+
+  socket.on("schedule-meeting", async ({ tutorId, studentId, meetingDetails }) => {
+    try {
+      const [result] = await db.promise().query(
+        "INSERT INTO meetings (tutor_id, student_id, meeting_time, duration, meeting_link) VALUES (?, ?, ?, ?, ?)",
+        [tutorId, studentId, meetingDetails.startTime, meetingDetails.duration, meetingDetails.link]
+      );
+
+      const meeting = {
+        id: result.insertId,
+        tutorId,
+        studentId,
+        ...meetingDetails
+      };
+
+      [tutorId, studentId].forEach(userId => {
+        if (onlineUsers.has(userId)) {
+          io.to(onlineUsers.get(userId)).emit("new-meeting", meeting);
+        }
+      });
+    } catch (error) {
+      console.error("Error scheduling meeting:", error);
+      socket.emit("meeting-error", { error: "Failed to schedule meeting" });
+    }
   });
 
   socket.on("disconnect", () => {
-    console.log(" A user disconnected:", socket.id);
+    for (let [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+        socket.broadcast.emit("user-status-changed", { userId, status: "offline" });
+        break;
+      }
+    }
   });
 });
 

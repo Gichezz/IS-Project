@@ -21,22 +21,7 @@ db.connect(function (err) {
    // });
 
 
-   let createMessagesTable = `
-    CREATE TABLE IF NOT EXISTS messages (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        conversation_id VARCHAR(50),
-        sender_id VARCHAR(50),
-        text TEXT,
-        time_sent DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`;
-
-db.query(createMessagesTable, (err) => {
-    if (err) throw err;
-    console.log("Messages table created or exists.");
-});
-
-
+   
 let userTable=`CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -53,6 +38,8 @@ db.query(userTable, (err) => {
     if (err) throw err;
     console.log("User table created or exists.");
 });
+
+
 
 });
 
