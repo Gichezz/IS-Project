@@ -19,6 +19,7 @@
         <ul>
           <li><a href="#dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
           <li><a href="#expert-requests"><i class="fas fa-user-check"></i> Expert Requests</a></li>
+          <li><a href="#skill-approvals"><i class="fas fa-lightbulb"></i> Skill Approvals</a></li>
           <li><a href="#user-management"><i class="fas fas fa-users-cog"></i> User Management</a></li>
           <li><a href="#payments"><i class="fas fa-money-check-alt"></i> Payments</a></li>
           <li><a href="#" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
@@ -55,6 +56,22 @@
         <h2>Pending Expert Approvals</h2>
         <div id="expertRequestsContainer" class="requests-container">
           <!-- Dynamic content will be inserted here via JavaScript -->
+        </div>
+      </section>
+
+      <!-- Skill Approvals Section -->
+      <section id="skill-approvals" class="content-section" style="display: none;">
+        <h2>Pending Skill Approvals</h2>
+        <div class="filter-options">
+          <select id="skill-filter">
+            <option value="all">All Skills</option>
+            <option value="pending" selected>Pending Only</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div id="skillsContainer" class="skills-container">
+          <!-- Skills will be loaded here -->
         </div>
       </section>
 
