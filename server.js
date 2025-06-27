@@ -28,6 +28,7 @@ app.use(express.json());
 
 
 const adminRoutes = require('./routes/adminRoutes');
+const expertRoutes = require('./routes/expertRoutes');
 
 
 //Session setup
@@ -59,6 +60,7 @@ const port=process.env.PORT;
 app.use('/', authRoutes);
 app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
+app.use('/api/expert', expertRoutes);
 
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");

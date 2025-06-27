@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetchDashboardStats();
             } else if (targetId === 'user-management') {
                 fetchAllUsers();
+            } else if (targetId === 'skill-approvals') {
+                fetchSkills();
             }
         });
     });
@@ -124,6 +126,98 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `).join('');
+    };
+
+    // Fetch All skills
+    const fetchSkills = async (filter = 'pending') => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/skills?filter=${filter}`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const skills = await response.json();
+            renderSkills(skills);
+        } catch (error) {
+            console.error('Error fetching pending skills:', error);
+            document.getElementById('skillsContainer').innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to load skills. Please refresh the page.
+                </div>
+            `;
+        }
+    };
+
+    // Render pending skills
+    const renderSkills = (skills) => {
+        const container = document.getElementById('skillsContainer');
+        if (!container) return;
+        
+        if (!Array.isArray(skills)) {
+            container.innerHTML = `
+                <div class="error-message">
+                    Invalid data received from server
+                </div>
+            `;
+            return;
+        }
+
+        if (skills.length === 0) {
+            container.innerHTML = '<p class="no-skills">No skills found</p>';
+            return;
+        }
+        
+        container.innerHTML = skills.map(skill => `
+            <div class="skill-card">
+                <div class="skill-info">
+                    <h4>${skill.skill_name}</h4>
+                    <p><strong>Expert:</strong> ${skill.expert_email}</p>
+                    <p><strong>Rate:</strong> KES ${skill.hourly_rate}/hr</p>
+                    <p><strong>Description:</strong> ${skill.description}</p>
+                    <p class="status-${skill.status.toLowerCase()}">
+                        ${skill.status.toUpperCase()}
+                    </p>
+                </div>
+                    <div class="skill-actions">
+                        ${skill.status !== 'Approved' ? `
+                            <button class="approve-skill-btn" data-id="${skill.id}">Approve</button>
+                        ` : ''}
+                        ${skill.status !== 'Rejected' ? `
+                            <button class="reject-skill-btn" data-id="${skill.id}">Reject</button>
+                        ` : ''}
+                    </div>
+            </div>
+        `).join('');
+    };
+
+    // Update skill status
+    const updateSkillStatus = async (skillId, status, reason = '') => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/skills/${skillId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, reason }),
+                credentials: 'include'
+            });
+            
+            if (!response.ok) throw new Error('Status update failed');
+            
+            const result = await response.json();
+            if (result.success) {
+                alert(`Skill ${status.toLowerCase()} successfully`);
+                fetchSkills(); // Refresh the list
+                fetchDashboardStats(); // Update dashboard counts
+            } else {
+                throw new Error(result.error || 'Failed to update skill status');
+            }
+        } catch (error) {
+            console.error('Error updating skill status:', error);
+            alert(`Failed to ${status.toLowerCase()} skill`);
+        }
     };
 
     // Status helpers
@@ -280,6 +374,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 await updateUserStatus(id, 'delete');
             }
         }
+
+        // Skill approval/rejection
+        if (e.target.classList.contains('approve-skill-btn')) {
+            if (confirm('Approve this skill?')) {
+                const button = e.target.closest('.approve-skill-btn');
+                const id = button.getAttribute('data-id');
+                await updateSkillStatus(id, 'Approved');
+            }
+        }
+        
+        if (e.target.classList.contains('reject-skill-btn')) {
+            const reason = prompt('Enter rejection reason (required):')
+            if (reason) {
+                const button = e.target.closest('.reject-skill-btn');
+                const id = button.getAttribute('data-id');
+                await updateSkillStatus(id, 'Rejected');
+            } else {
+                alert('Rejection reason is required.');
+            }
+        }
     });
     
     // Update User status function
@@ -319,6 +433,12 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(`Failed to ${action} user`);
         }
     };
+
+    // Skill filter dropdown listener
+    document.getElementById('skill-filter')?.addEventListener('change', (e) => {
+        const filter = e.target.value; // 'pending', 'approved', 'rejected', 'all'
+        fetchSkills(filter);
+    });
     
     // Initialize dashboard
     fetchDashboardStats();

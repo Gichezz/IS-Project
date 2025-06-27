@@ -2,67 +2,361 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SkillSwap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSwap - Expert Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/allcss/expert-dashboard.css">
 </head>
-<body>
-  <header>
-    <h1>Welcome, Expert!</h1>
-    <a href="/logout" class="logout-btn">Logout</a>
-  </header>
-
-  <main>
-    <h2>Pending Session Requests</h2>
-    <div class="session-list">
-      <!-- Individual session cards will go here -->
-      <div class="session-card" data-session-id="1">
-        <div class="session-info">
-          <h3>Artificial Intelligence</h3>
-          <p><strong>Email:</strong> student@example.com</p>
-          <p><strong>Time:</strong> 2025-06-24 10:00 AM</p>
-          <p class="status pending">Status: Pending</p>
+<body data-expert-id="YOUR_EXPERT_ID">
+  <div class="dashboard-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="profile-section">
+        <div class="avatar">
+          <i class="fas fa-user-tie"></i>
         </div>
-        <div class="session-actions">
-          <button class="accept-btn">Accept</button>
-          <button class="reject-btn">Reject</button>
+        <h2>Expert Dashboard</h2>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <ul>
+          <li class="active" data-section="sessions"><a href="#"><i class="fas fa-calendar-check"></i> Session Requests</a></li>
+          <li data-section="skills"><a href="#"><i class="fas fa-lightbulb"></i> My Skills</a></li>
+          <li data-section="feedback"><a href="#"><i class="fas fa-comment-alt"></i> Student Feedback</a></li>
+          <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+      </nav>
+      <!-- Add this notification bell -->
+      <div class="notification-container">
+        <div id="notification-bell" class="notification-bell">
+          <i class="fas fa-bell"></i>
+          <span id="notification-badge" class="notification-badge"></span>
         </div>
       </div>
+    </aside>
 
-        <!-- Session Card 2 -->
-        <div class="session-card" data-session-id="2">
-            <div class="session-info">
-            <h3>Robotics</h3>
-            <p><strong>Email:</strong> student2@example.com</p>
-            <p><strong>Time:</strong> 2025-06-24 2:00 PM</p>
-            <p class="status pending">Status: Pending</p>
-            </div>
-            <div class="session-actions">
-            <button class="accept-btn">Accept</button>
-            <button class="reject-btn">Reject</button>
-            </div>
-        </div>
-        <!-- Session Card 3 -->
-
-        <div class="session-card" data-session-id="3">
-            <div class="session-info">
-            <h3>Web Development</h3>
-            <p><strong>Email:</strong> student3@example.com</p>
-            <p><strong>Time:</strong> 2025-06-25 11:30 AM</p>
-            <p class="status pending">Status: Pending</p>
-            </div>
-            <div class="session-actions">
-            <button class="accept-btn">Accept</button>
-            <button class="reject-btn">Reject</button>
-            </div>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Sessions Section -->
+      <section id="sessions-section" class="content-section active">
+        <div class="section-header">
+          <h2><i class="fas fa-calendar-check"></i> Session Requests</h2>
+          <div class="filter-options">
+            <select id="session-filter">
+              <option value="all">All Sessions</option>
+              <option value="pending">Pending</option>
+              <option value="accepted">Accepted</option>
+              <option value="completed">Completed</option>
+              <option value="declined">Declined</option>
+            </select>
+          </div>
         </div>
 
-    </div>
-  </main>
+        <div class="session-cards">
+          <!-- Pending Session Card -->
+          <div class="session-card pending" data-session-id="1">
+            <div class="card-header">
+              <h3>Artificial Intelligence</h3>
+              <span class="status-badge pending">Pending</span>
+            </div>
+            <div class="card-body">
+              <div class="session-details">
+                <p><i class="fas fa-user"></i> <strong>Student:</strong> student@example.com</p>
+                <p><i class="fas fa-clock"></i> <strong>Time:</strong> June 24, 2025 - 10:00 AM</p>
+                <p><i class="fas fa-sticky-note"></i> <strong>Notes:</strong> Need help with neural networks</p>
+              </div>
+              <div class="session-actions">
+                <button class="btn accept-btn"><i class="fas fa-check"></i> Accept</button>
+                <button class="btn reject-btn"><i class="fas fa-times"></i> Decline</button>
+              </div>
+            </div>
+          </div>
 
-  <div id="redirectModal" class="modal">
+          <!-- Accepted Session Card -->
+          <div class="session-card accepted" data-session-id="2">
+            <div class="card-header">
+              <h3>Robotics</h3>
+              <span class="status-badge accepted">Accepted</span>
+            </div>
+            <div class="card-body">
+              <div class="session-details">
+                <p><i class="fas fa-user"></i> <strong>Student:</strong> student2@example.com</p>
+                <p><i class="fas fa-clock"></i> <strong>Time:</strong> June 24, 2025 - 2:00 PM</p>
+                <p><i class="fas fa-sticky-note"></i> <strong>Notes:</strong> ROS navigation stack</p>
+              </div>
+              <div class="session-actions">
+                <button class="btn start-btn"><i class="fas fa-video"></i> Start Session</button>
+                <button class="btn reschedule-btn"><i class="fas fa-calendar-alt"></i> Reschedule</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completed Session Card -->
+          <div class="session-card completed" data-session-id="3">
+            <div class="card-header">
+              <h3>Web Development</h3>
+              <span class="status-badge completed">Completed</span>
+            </div>
+            <div class="card-body">
+              <div class="session-details">
+                <p><i class="fas fa-user"></i> <strong>Student:</strong> student3@example.com</p>
+                <p><i class="fas fa-clock"></i> <strong>Time:</strong> June 25, 2025 - 11:30 AM</p>
+                <p><i class="fas fa-star"></i> <strong>Rating:</strong> 4.5/5</p>
+              </div>
+              <div class="session-actions">
+                <button class="btn feedback-btn"><i class="fas fa-eye"></i> View Feedback</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Skills Section -->
+      <section id="skills-section" class="content-section">
+        <div class="section-header">
+          <h2><i class="fas fa-lightbulb"></i> My Skills</h2>
+          <button id="add-skill-btn" class="btn primary-btn"><i class="fas fa-plus"></i> Add New Skill</button>
+        </div>
+
+        <div class="skills-grid">
+          <!-- Skill Card 1 -->
+          <div class="skill-card" data-skill-id="1">
+            <div class="skill-header">
+              <h3>Artificial Intelligence</h3>
+              <div class="skill-actions">
+                <button class="icon-btn edit-skill"><i class="fas fa-edit"></i></button>
+                <button class="icon-btn delete-skill"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="skill-body">
+              <p><strong>Hourly Rate:</strong> Kshs 5000</p>
+              <p><strong>Description:</strong> Expert in machine learning algorithms, neural networks, and AI applications.</p>
+              <div class="skill-stats">
+                <span><i class="fas fa-users"></i> 12 students taught</span>
+                <span><i class="fas fa-star"></i> 4.8/5 rating</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Skill Card 2 -->
+          <div class="skill-card" data-skill-id="2">
+            <div class="skill-header">
+              <h3>Web Development</h3>
+              <div class="skill-actions">
+                <button class="icon-btn edit-skill"><i class="fas fa-edit"></i></button>
+                <button class="icon-btn delete-skill"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="skill-body">
+              <p><strong>Hourly Rate:</strong> Kshs 5000</p>
+              <p><strong>Description:</strong> Full-stack development with React, Node.js, and MongoDB.</p>
+              <div class="skill-stats">
+                <span><i class="fas fa-users"></i> 8 students taught</span>
+                <span><i class="fas fa-star"></i> 4.5/5 rating</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Skill Button Card -->
+          <div class="add-skill-card" id="add-skill-trigger">
+            <div class="add-skill-content">
+              <i class="fas fa-plus-circle"></i>
+              <p>Add New Skill</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pending skills section -->
+      <section id="pending-skills-section" class="content-section">
+        <div class="section-header">
+          <h2><i class="fas fa-hourglass-half"></i> Pending Skills</h2>
+        </div>
+        <div class="skills-grid" id="pending-skills-grid">
+          <!-- Pending skills will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Feedback Section -->
+      <section id="feedback-section" class="content-section">
+        <div class="section-header">
+          <h2><i class="fas fa-comment-alt"></i> Student Feedback</h2>
+          <div class="filter-options">
+            <select id="feedback-filter">
+              <option value="all">All Feedback</option>
+              <option value="recent">Recent</option>
+              <option value="highest">Highest Rated</option>
+              <option value="lowest">Lowest Rated</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="feedback-list">
+          <!-- Feedback Item 1 -->
+          <div class="feedback-item">
+            <div class="feedback-header">
+              <div class="student-info">
+                <div class="avatar-small"><i class="fas fa-user"></i></div>
+                <div>
+                  <h4>student3@example.com</h4>
+                  <div class="rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
+                    <span>4.5</span>
+                  </div>
+                </div>
+              </div>
+              <div class="feedback-date">June 25, 2025</div>
+            </div>
+            <div class="feedback-content">
+              <p>"The session on Web Development was incredibly helpful! The expert explained complex concepts in a way that was easy to understand and provided practical examples that I could apply immediately to my project."</p>
+            </div>
+            <div class="feedback-skill">
+              <span class="skill-tag">Web Development</span>
+            </div>
+          </div>
+
+          <!-- Feedback Item 2 -->
+          <div class="feedback-item">
+            <div class="feedback-header">
+              <div class="student-info">
+                <div class="avatar-small"><i class="fas fa-user"></i></div>
+                <div>
+                  <h4>student1@example.com</h4>
+                  <div class="rating">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <span>5.0</span>
+                  </div>
+                </div>
+              </div>
+              <div class="feedback-date">June 20, 2025</div>
+            </div>
+            <div class="feedback-content">
+              <p>"Absolutely brilliant session on AI! The expert was patient, knowledgeable, and went above and beyond to ensure I understood the material. I'll definitely be booking more sessions in the future."</p>
+            </div>
+            <div class="feedback-skill">
+              <span class="skill-tag">Artificial Intelligence</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notifications Panel (hidden by default) -->
+      <div id="notifications-panel" class="notifications-panel">
+        <div class="notifications-header">
+          <h3><i class="fas fa-bell"></i> Notifications</h3>
+          <button id="mark-all-read">Mark all as read</button>
+        </div>
+        <div class="notifications-list">
+          <!-- Notifications will be dynamically inserted here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Skill Modal -->
+  <div id="skill-modal" class="modal">
     <div class="modal-content">
-        <p>Redirecting to chat...</p>
+      <div class="modal-header">
+        <h3 id="modal-title">Add New Skill</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="skill-form">
+          <input type="hidden" id="skill-id">
+          <div class="form-group">
+            <label for="skill-category">Skills You Offer</label>
+            <select id="skills" class="skills-dropdown">
+                    <option value="">Select a skill</option>
+                    <option value="web-dev">Web Development</option>
+                    <option value="design">Graphic Design</option>
+                    <option value="language">Language Teaching</option>
+                    <option value="music">Music Lessons</option>
+                    <option value="writing">Content Writing</option>
+                    <option value="baking">Baking</option>
+                    <option value="painting">Painting</option>
+                    <option value="robotics">Robotics</option>
+                    <option value="ai">Artificial Intelligence</option>
+                    <option value="drawing">Drawing</option>
+                    <option value="crocheting">Crocheting</option>
+                    <option value="other">Other</option>
+                </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="skill-rate">Hourly Rate (Kshs)</label>
+            <input type="number" id="skill-rate" min="10" step="5" required>
+          </div>
+
+          <div class="form-group">
+            <label for="skill-description">Description</label>
+            <textarea id="skill-description" rows="4" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Proof of Skill (Drag & Drop or Click)</label>
+            <div class="file-upload-container">
+              <div class="dropzone" id="skill-proof-dropzone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag & drop files here or click to browse</p>
+                <input type="file" id="skill-proof" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+              </div>
+              <div class="file-preview" id="file-preview">
+                <!-- Preview thumbnails will appear here -->
+              </div>
+            </div>
+            <small class="form-help">Max 5 files (PDF, JPG, PNG up to 5MB each)</small>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn secondary-btn close-modal">Cancel</button>
+            <button type="submit" class="btn primary-btn">Save Skill</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Details Modal -->
+  <div id="session-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="session-modal-title">Session Details</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="session-details">
+          <!-- Dynamic content will be inserted here by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary-btn close-modal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div id="feedback-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Student Feedback</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="feedback-details">
+          <!-- Dynamic content will be inserted here by JavaScript -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary-btn close-modal">Close</button>
+      </div>
     </div>
   </div>
 

@@ -22,13 +22,19 @@ router.get('/stats', isAdmin, async (req, res) => {
         const [totalExperts] = await db.promise().query(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 1'
         );
-        
+
+        // Get pending skill approvals
+        const [pendingSkills] = await db.promise().query(
+            "SELECT COUNT(*) AS count FROM skills WHERE status = 'Pending'"
+        );
+
         // Get recent activities
         const recentActivities = await Activity.getRecent(5);
         
         res.json({
             pendingExperts: pendingExperts[0].count,
             totalExperts: totalExperts[0].count,
+            pendingSkills: pendingSkills[0].count,
             recentActivities
         });
     } catch (error) {
@@ -87,19 +93,25 @@ router.put('/experts/:id/status', isAdmin, async (req, res) => {
 
 // Soft delete/suspend user
 router.put('/users/:id/status', isAdmin, async (req, res) => {
-    const { status } = req.body; // 'active', 'suspended', or 'deleted'
-    
-    await db.query(
-        `UPDATE users 
-         SET approved = CASE 
-            WHEN ? = 'deleted' THEN -1 
-            WHEN ? = 'suspended' THEN 0
-            ELSE 1 
-         END
-         WHERE id = ?`,
-        [status, status, req.params.id]
-    );
-    res.json({ success: true });
+    try{
+        const { status } = req.body; // 'active', 'suspended', or 'deleted'
+        
+        await db.promise().query(
+            `UPDATE users 
+            SET approved = CASE 
+                WHEN ? = 'deleted' THEN -1 
+                WHEN ? = 'suspended' THEN 0
+                ELSE 1 
+            END
+            WHERE id = ?`,
+            [status, status, req.params.id]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // View all users
@@ -112,5 +124,96 @@ router.get('/users', isAdmin, async (req, res) => {
     `);
     res.json(users);
 });
+
+// Get pending skills
+router.get('/skills', isAdmin, async (req, res) => {
+    try {
+        const { filter = 'pending' } = req.query; // Default: 'pending'
+        
+        let query = `
+            SELECT s.*, u.email AS expert_email
+            FROM skills s
+            JOIN users u ON s.expert_id = u.id
+        `;
+
+        if (filter !== 'all') {
+            query += ` WHERE s.status = ?`;
+            const [skills] = await db.promise().query(query, [filter.charAt(0).toUpperCase() + filter.slice(1)]);
+            res.json(skills);
+        } else {
+            const [skills] = await db.promise().query(query);
+            res.json(skills);
+        }
+    } catch (error) {
+        console.error('Error fetching skills:', error);
+        res.status(500).json({ error: 'Failed to fetch skills' });
+    }
+});
+
+// Update skill status
+router.put('/skills/:id/status', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, reason } = req.body;
+        
+        if (!['Approved', 'Rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        
+        // Update skill status
+        await db.promise().query(
+            'UPDATE skills SET status = ? WHERE id = ?',
+            [status, id]
+        );
+
+        // Get skill info for activity log
+        const [skillRows] = await db.promise().query(
+            'SELECT skill_name, expert_id FROM skills WHERE id = ?',
+            [id]
+        );
+
+        if (!skillRows.length) {
+            return res.status(404).json({ error: 'Skill not found' });
+        }
+
+        const skill = skillRows[0];
+
+        // Log this activity
+        await Activity.create({
+            userId: skill.expert_id,
+            type: `Skill ${status}`,
+            description: `"${skill.skill_name}" was ${status.toLowerCase()}`
+        });
+
+        // Notify expert
+        await notifyExpert(id, status, reason);
+
+        res.json({ 
+            success: true,
+            message: `Skill ${status.toLowerCase()} successfully`
+        });
+    } catch (error) {
+        console.error('Error updating skill status:', error);
+        res.status(500).json({ error: 'Failed to update skill status' });
+    }
+});
+
+const notifyExpert = async (skillId, action, reason = '') => {
+    // Get skill and expert info
+    const [skill] = await db.query(
+        'SELECT skill_name, expert_id FROM skills WHERE id = ?', 
+        [skillId]
+    );
+    const [expert] = await db.query(
+        'SELECT id, email FROM users WHERE id = ?', 
+        [skill.expert_id]
+    );
+
+    // Save to database
+    await db.query(
+        'INSERT INTO notifications (user_id, message) VALUES (?, ?)',
+        [expert.id, `Your skill "${skill.skill_name}" was ${action}. ${reason}`]
+    );
+};
 
 module.exports = router;
