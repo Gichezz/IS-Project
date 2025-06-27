@@ -3,7 +3,8 @@ const db = require('../database');
 class Activity {
     static async create({ userId, type, description }) {
         const [result] = await db.promise().query(
-            'INSERT INTO activities (user_id, type, description) VALUES (?, ?, ?)',
+            `INSERT INTO activities (user_id, type, description) 
+             VALUES (?, ?, ?)`,
             [userId, type, description]
         );
         return result;

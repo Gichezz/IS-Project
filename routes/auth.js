@@ -19,16 +19,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+
 // STUDENT REGISTRATION 
 router.post('/register-student', async (req, res) => {
     const { name, email, password, selectedSkills } = req.body;
 
-    // Backend field validation
     if (!name || !email || !password || !selectedSkills) {
         return res.status(400).send('Please fill in all required fields.');
     }
 
-    // Basic email validation (same as frontend)
     const emailRegex = /^[^\s@]+@strathmore\.edu$/;
     if (!emailRegex.test(email)) {
         return res.status(400).send('Email must be a valid @strathmore.edu address.');
@@ -36,25 +35,29 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = `INSERT INTO users (name, email, password, role, skills) VALUES (?, ?, ?, 'student', ?)`;
+        const sql = `
+            INSERT INTO users (id, name, email, password, role, skills)
+            VALUES (UUID(), ?, ?, ?, 'student', ?)
+        `;
 
-        db.query(sql, [name, email, hashedPassword, selectedSkills], (err, result) => {
+        db.query(sql, [name, email, hashedPassword, selectedSkills], async (err) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).send('Email already in use.');
                 }
                 return res.status(500).send('Database error: ' + err.message);
             }
-            const insertedId = result.insertId;
-            // Activity logging using Promise
+
+            // 🟩 ✅ Fetch UUID of newly registered student
+            const [rows] = await db.promise().query(`SELECT id FROM users WHERE email = ?`, [email]);
+            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+
             Activity.create({
-                userId: insertedId,
+                userId: insertedId, // 🟩 ✅ Use actual UUID
                 type: 'New Registration',
                 description: `${name} (${email}) registered as student`
             })
-            .then(() => {
-                res.redirect('/login.html');
-            })
+            .then(() => res.redirect('/login.html'))
             .catch(err => {
                 console.error('Error creating activity:', err);
                 res.redirect('/login.html');
@@ -65,23 +68,21 @@ router.post('/register-student', async (req, res) => {
     }
 });
 
-//  EXPERT REGISTRATION 
+
+// EXPERT REGISTRATION 
 router.post('/register-expert', upload.array('files'), async (req, res) => {
     const { name, email, password, selectedSkills, description } = req.body;
     const files = req.files;
 
-    // Required fields
     if (!name || !email || !password || !description || !selectedSkills) {
         return res.status(400).send("Please fill in all required fields.");
     }
 
-    // Email format check
     const emailRegex = /^[^\s@]+@strathmore\.edu$/;
     if (!emailRegex.test(email)) {
         return res.status(400).send("Email must be a valid @strathmore.edu address.");
     }
 
-    // Must upload at least one file
     if (!files || files.length === 0) {
         return res.status(400).send("Please upload at least one file.");
     }
@@ -89,27 +90,30 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const fileNames = files.map(f => f.filename).join(',');
+
         const sql = `
-            INSERT INTO users (name, email, password, role, skills, description, files)
-            VALUES (?, ?, ?, 'expert', ?, ?, ?)
+            INSERT INTO users (id, name, email, password, role, skills, description, files)
+            VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
         `;
 
-        db.query(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], (err, result) => {
+        db.query(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], async (err) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).send('Email already in use.');
                 }
                 return res.status(500).send('Database error: ' + err.message);
             }
-            const insertedId = result.insertId;
+
+            // 🟩 ✅ Fetch UUID of newly registered expert
+            const [rows] = await db.promise().query(`SELECT id FROM users WHERE email = ?`, [email]);
+            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+
             Activity.create({
-                userId: insertedId,
+                userId: insertedId, // 🟩 ✅ Use actual UUID
                 type: 'New Registration',
                 description: `${name} (${email}) registered as expert`
             })
-            .then(() => {
-                res.redirect('/login.html');
-            })
+            .then(() => res.redirect('/login.html'))
             .catch(err => {
                 console.error('Error creating activity:', err);
                 res.redirect('/login.html');
@@ -146,22 +150,27 @@ router.post('/register-admin', async (req, res) => {
             return res.status(400).send("Admin already exists");
         }
 
-        // 4. Create admin
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10); // hash first
         const [result] = await db.promise().query(
-            `INSERT INTO users (name, email, password, role, approved, skills) 
-             VALUES (?, ?, ?, 'admin', 1, 'admin')`,
-            [name, email, hashedPassword]
-        );
+  `INSERT INTO users (id, name, email, password, role, approved, skills)
+   VALUES (UUID(), ?, ?, ?, ?, ?, ?)`,
+  [name, email, hashedPassword, 'admin', 1, 'admin']
+);
 
-        const insertedId = result.insertId;
-        // 5. Log activity
-        try {
-            await Activity.create({
-                userId: insertedId,
-                type: 'New Registration',
-                description: `${name} (${email}) registered as admin`
-            });
+// Retrieve UUID from DB
+const [[user]] = await db.promise().query(
+  `SELECT id FROM users WHERE email = ? AND role = 'admin'`,
+  [email]
+);
+
+// Use correct UUID for activity
+try{
+    await Activity.create({
+    userId: user.id,
+    type: 'New Registration',
+    description: `${name} (${email}) registered as admin`
+});
+
         } catch (err) {
             console.error("Error creating activity:", err);
         }
