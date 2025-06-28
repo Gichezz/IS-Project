@@ -346,7 +346,7 @@ router.get('/feedback', async (req, res) => {
 router.get('/notifications', async (req, res) => {
   try {
     const expertId = req.session.user.id;
-    const notifications = await pool.query(
+    const notifications = await executeQuery(
       'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC',
       [expertId]
     );

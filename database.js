@@ -3,8 +3,8 @@ let mysql = require("mysql2");
 let db = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "admin",
-    port: 3306,
+    password: "Zarian",
+    port: 3307,
     database: "skillswap_db" 
 });
 

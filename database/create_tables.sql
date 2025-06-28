@@ -40,11 +40,11 @@ CREATE TABLE session_requests (
     FOREIGN KEY (expert_id) REFERENCES users(id),
     FOREIGN KEY (skill_id) REFERENCES skills(id)
 );
-<<<<<<< HEAD
 
-=======
+
+
 -- Table for activities happening in the system
->>>>>>> b115ce178e45d01397d49d6283c1333facc98b02
+
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(36),
@@ -56,15 +56,16 @@ CREATE TABLE IF NOT EXISTS activities (
 -- Skills table
 CREATE TABLE IF NOT EXISTS skills (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    expert_id INT NOT NULL,
+    expert_id VARCHAR(36) NOT NULL,  -- ✅ changed from INT to VARCHAR(36)
     skill_name VARCHAR(100),
     hourly_rate DECIMAL(10, 2),
     description TEXT,
     proof_files VARCHAR(1000) NOT NULL DEFAULT '',
     status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (expert_id) REFERENCES users(id),
+    FOREIGN KEY (expert_id) REFERENCES users(id)
 );
+
 -- Session feedback table
 CREATE TABLE IF NOT EXISTS session_feedback (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,10 +75,11 @@ CREATE TABLE IF NOT EXISTS session_feedback (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES session_requests(id)
 );
+
 -- Notifications table
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id VARCHAR(36) NOT NULL,  -- ✅ changed from INT to VARCHAR(36)
     message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

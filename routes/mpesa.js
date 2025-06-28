@@ -28,6 +28,12 @@ router.get("/password" , mpesaPassword);
 router.get("/payment-status/:checkoutID", checkPaymentStatus); 
 //route to initiate STK push but requires token first)
 router.post("/stk/push",token,stkPush);
+// Raw body logger for debugging Safaricom callback
+router.post('/stk/callback', express.raw({ type: '*/*' }), (req, res, next) => {
+    console.log("📥 Raw callback received:", req.body.toString());
+    next();
+});
+
 router.post('/stk/callback', express.json({ type: '*/*' }), mpesa.mpesaCallback);
 
 
