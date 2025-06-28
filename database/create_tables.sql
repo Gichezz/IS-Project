@@ -1,13 +1,14 @@
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'expert', 'admin') NOT NULL,
-    skills TEXT, 
-    description TEXT, -- only used for experts
-    files TEXT -- comma-separated list of uploaded file names
+    role ENUM('student', 'expert') DEFAULT 'expert',
+    skills TEXT,             -- For experts only
+    description TEXT,        -- For experts only
+    files TEXT,              -- For experts only
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     approved TINYINT(1) DEFAULT 0 -- 0 = not approved, 1 = approved
 );
 -- Payment Table
@@ -19,15 +20,16 @@ CREATE TABLE IF NOT EXISTS mpesa_payments (
     transaction_date DATETIME,
     service_name VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
 );
 -- Session Requests table
 CREATE TABLE session_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     skill_id INT,
     skill_requested VARCHAR(100) NOT NULL,
-    student_id INT NOT NULL,
+    student_id VARCHAR(36) NOT NULL,
     student_email VARCHAR(100) NOT NULL,
-    expert_id INT DEFAULT NULL,
+    expert_id VARCHAR(36) DEFAULT NULL,
     requested_time DATETIME NOT NULL,
     status ENUM('pending', 'accepted', 'completed', 'rejected') DEFAULT 'pending',
     student_completed BOOLEAN DEFAULT FALSE,
@@ -38,10 +40,11 @@ CREATE TABLE session_requests (
     FOREIGN KEY (expert_id) REFERENCES users(id),
     FOREIGN KEY (skill_id) REFERENCES skills(id)
 );
+
 -- Table for activities happening in the system
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
+    user_id VARCHAR(36),
     type VARCHAR(50) NOT NULL, -- e.g., 'Registration', 'Expert Approval'
     description TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
