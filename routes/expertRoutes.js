@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 
 const storage = multer.diskStorage({
@@ -21,14 +22,32 @@ const upload = multer({
   }
 });
 
-// Helper function to execute queries with promises
-function executeQuery(sql, params) {
-  return new Promise((resolve, reject) => {
-    db.query(sql, params, (err, results) => {
-      if (err) return reject(err);
-      resolve(results);
-    });
-  });
+// Helper function to execute queries
+async function executeQuery(sql, params) {
+  try {
+    const [rows] = await db.execute(sql, params);
+    return rows;
+  } catch (err) {
+    console.error('Database query error:', err);
+    throw err;
+  }
+}
+// Helper Function to delete skill files
+async function deleteSkillFiles(filePaths) {
+    try {
+        if (!filePaths) return;
+        
+        const files = filePaths.split(',');
+        for (const file of files) {
+            const filePath = path.join(__dirname, '../', file.trim());
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`Deleted file: ${filePath}`);
+            }
+        }
+    } catch (err) {
+        console.error('Error deleting skill files:', err);
+    }
 }
 
 // Middleware to check if user is an expert
@@ -92,7 +111,7 @@ router.put('/session-requests/:id', async (req, res) => {
     sql += ' WHERE id = ?';
     params.push(id);
     
-    await executeQuery(sql, params);
+    await db.execute(sql, params);
     res.json({ success: true, message: 'Session updated successfully' });
   } catch (error) {
     console.error('Error updating session request:', error);
@@ -117,7 +136,7 @@ router.put('/session-requests/:id/complete', async (req, res) => {
     }
     
     // Update expert_completed flag
-    await executeQuery(
+    await db.execute(
       'UPDATE session_requests SET expert_completed = TRUE WHERE id = ?',
       [id]
     );
@@ -204,31 +223,34 @@ router.get('/skills', async (req, res) => {
 // Add new skill
 router.post('/skills', upload.array('proof_files', 5), async (req, res) => {
   try {
-    console.log('Uploaded files:', req.files); 
+
     const expertId = req.session.user.id;
     const { skill_name, hourly_rate, description } = req.body;
+    const proofFiles = req.files.map(file => `/uploads/${file.filename}`);
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
-
-    const proofFiles = req.files.map(file => `/uploads/${file.filename}`);
-
-    console.log('Processed files:', proofFiles);
     
-    const [result] = await db.query(
+    const result = await executeQuery(
       'INSERT INTO skills (expert_id, skill_name, hourly_rate, description, proof_files, status) VALUES (?, ?, ?, ?, ?, "Pending")',
       [expertId, skill_name, hourly_rate, description, proofFiles.join(',')]
     );
-    
-    res.json({ 
-      success: true, 
-      skill_id: result.insertId,
-      message: 'Skill added successfully and awaiting approval'
-    });
+
+    if (result.affectedRows === 1) {
+        return res.json({
+            success: true,
+            skill_id: result.insertId || 0, // Handle cases where insertId might be 0
+            message: 'Skill added successfully'
+        });
+    } else {
+        throw new Error('Database insertion failed');
+    }
   } catch (error) {
-    console.error('Error adding skill:', error);
-    res.status(500).json({ error: 'Failed to add skill' });
+    res.status(500).json({
+       error: 'Failed to add skill', 
+       details: error.message
+      });
   }
 });
 
@@ -276,11 +298,11 @@ router.delete('/skills/:id', async (req, res) => {
     
     // Verify the skill belongs to this expert
     const [skill] = await executeQuery(
-      'SELECT expert_id FROM skills WHERE id = ?',
-      [id]
+      'SELECT proof_files FROM skills WHERE id = ? AND expert_id = ?',
+      [id, expertId]
     );
     
-    if (!skill || skill.expert_id !== expertId) {
+    if (!skill || skill.length === 0) {
       return res.status(404).json({ error: 'Skill not found or not authorized' });
     }
     
@@ -295,8 +317,14 @@ router.delete('/skills/:id', async (req, res) => {
         error: 'Cannot delete skill with active or past sessions' 
       });
     }
-    
+    // Delete the skill record
     await executeQuery('DELETE FROM skills WHERE id = ?', [id]);
+
+    // Delete associated files
+    if (skill[0].proof_files) {
+        await deleteSkillFiles(skill[0].proof_files);
+    }
+
     res.json({ success: true, message: 'Skill deleted successfully' });
   } catch (error) {
     console.error('Error deleting skill:', error);

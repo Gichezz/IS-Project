@@ -60,17 +60,31 @@
                     body: JSON.stringify({ email, password })
                 });
 
-                if (response.ok && response.redirected) {
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    sessionStorage.setItem("userId", data.userId);
+                    sessionStorage.setItem("userEmail", data.userEmail);
+                    sessionStorage.setItem("isLoggedIn", "true");
+
                     showToast("Login successful!");
+
+                    // Redirect based on role
+                    const redirectUrl = data.role === "student"
+                        ? "/home.html"
+                        : data.role === "expert"
+                        ? "/expert-dashboard.html"
+                        : "/admin-dashboard.html";
+
                     setTimeout(() => {
-                        window.location.href = response.url;
+                        window.location.href = redirectUrl;
                     }, 1500);
                 } else {
                     const errorText = await response.text();
                     showToast("Login failed: " + errorText, true);
                 }
             } catch (error) {
-                alert("An error occurred: " + error.message);
+                showToast("An error occurred: " + error.message);
             }
         });
 

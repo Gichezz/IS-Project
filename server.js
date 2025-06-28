@@ -22,17 +22,17 @@ const io = socketIo(server, {
   }
 });
 
+// Static folders
+app.use('/allcss', express.static(path.join(__dirname, 'allcss')));
+app.use('/alljs', express.static(path.join(__dirname, 'alljs')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
-
-
-const adminRoutes = require('./routes/adminRoutes');
-const expertRoutes = require('./routes/expertRoutes');
-
 
 //Session setup
 app.use(
@@ -46,14 +46,39 @@ app.use(
   })
 );
 
+// Session verification middleware to protected routes
+app.use((req, res, next) => {
+    // Paths that don't require authentication
+    const publicPaths = ['/login', '/register', '/session', '/login.html', '/register.html'];
+    
+    if (publicPaths.includes(req.path)) {
+        return next();
+    }
+    
+    // Check if session exists and has user data
+    if (!req.session || !req.session.user) {
+        if (req.accepts('html')) {
+            return res.redirect('/login.html');
+        }
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    next();
+});
+
+app.use((err, req, res, next) => {
+    if (err instanceof TypeError && err.message.includes('session')) {
+        console.error('Session error:', err);
+        return res.status(500).send('Session configuration error');
+    }
+    next(err);
+});
+
+const adminRoutes = require('./routes/adminRoutes');
+const expertRoutes = require('./routes/expertRoutes');
 
 
 
-// Static folders
-app.use('/allcss', express.static(path.join(__dirname, 'allcss')));
-app.use('/alljs', express.static(path.join(__dirname, 'alljs')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
 
 //port in which application is running
 const port=process.env.PORT;

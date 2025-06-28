@@ -42,9 +42,6 @@ CREATE TABLE session_requests (
 );
 
 
-
--- Table for activities happening in the system
-
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(36),

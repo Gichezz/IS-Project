@@ -7,8 +7,6 @@ const router = express.Router();
 const Activity = require('./activity');
 
 
-
-
 // Multer storage config
 const storage = multer.diskStorage({
     destination: './uploads',
@@ -40,7 +38,7 @@ router.post('/register-student', async (req, res) => {
             VALUES (UUID(), ?, ?, ?, 'student', ?)
         `;
 
-        db.query(sql, [name, email, hashedPassword, selectedSkills], async (err) => {
+        db.execute(sql, [name, email, hashedPassword, selectedSkills], async(err, result) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).send('Email already in use.');
@@ -49,7 +47,7 @@ router.post('/register-student', async (req, res) => {
             }
 
             // 🟩 ✅ Fetch UUID of newly registered student
-            const [rows] = await db.promise().query(`SELECT id FROM users WHERE email = ?`, [email]);
+            const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
             const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
 
             Activity.create({
@@ -96,7 +94,7 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
             VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
         `;
 
-        db.query(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], async (err) => {
+        db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], async (err, result) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).send('Email already in use.');
@@ -105,7 +103,7 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
             }
 
             // 🟩 ✅ Fetch UUID of newly registered expert
-            const [rows] = await db.promise().query(`SELECT id FROM users WHERE email = ?`, [email]);
+            const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
             const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
 
             Activity.create({
@@ -142,7 +140,7 @@ router.post('/register-admin', async (req, res) => {
 
     try {
         // 3. Check if admin exists
-        const [existing] = await db.promise().query(
+        const [existing] = await db.execute(
             'SELECT * FROM users WHERE email = ? AND role = "admin"', 
             [email]
         );
@@ -150,26 +148,28 @@ router.post('/register-admin', async (req, res) => {
             return res.status(400).send("Admin already exists");
         }
 
+
+        // 4. Create admin
         const hashedPassword = await bcrypt.hash(password, 10); // hash first
-        const [result] = await db.promise().query(
-  `INSERT INTO users (id, name, email, password, role, approved, skills)
-   VALUES (UUID(), ?, ?, ?, ?, ?, ?)`,
-  [name, email, hashedPassword, 'admin', 1, 'admin']
-);
+        const [result] = await db.execute(
+            `INSERT INTO users (id, name, email, password, role, approved, skills)
+            VALUES (UUID(), ?, ?, ?, ?, ?, ?)`,
+            [name, email, hashedPassword, 'admin', 1, 'admin']
+        );
 
-// Retrieve UUID from DB
-const [[user]] = await db.promise().query(
-  `SELECT id FROM users WHERE email = ? AND role = 'admin'`,
-  [email]
-);
+        // Retrieve UUID from DB
+        const [[user]] = await db.execute(
+        `SELECT id FROM users WHERE email = ? AND role = 'admin'`,
+        [email]
+        );
 
-// Use correct UUID for activity
-try{
-    await Activity.create({
-    userId: user.id,
-    type: 'New Registration',
-    description: `${name} (${email}) registered as admin`
-});
+        // Use correct UUID for activity
+        try{
+            await Activity.create({
+            userId: user.id,
+            type: 'New Registration',
+            description: `${name} (${email}) registered as admin`
+        });
 
         } catch (err) {
             console.error("Error creating activity:", err);
@@ -183,16 +183,20 @@ try{
 });
 
 // Get pending experts
-router.get('/admin/pending-experts', ensureAuthenticated, (req, res) => {
-  // Verify admin role
-  if (req.session.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' });
+router.get('/admin/pending-experts', ensureAuthenticated, async (req, res) => {
+    try {
+        // Verify admin role
+        if (req.session.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        const sql = `SELECT * FROM users WHERE role = 'expert' AND approved = 0`;
+        const [results] = await db.execute(sql);
+
+        res.json(results);
+    } catch (err) {
+    console.error('Error fetching pending experts:', err);
+    res.status(500).json({ error: 'Database error' });
   }
-  const sql = `SELECT * FROM users WHERE role = 'expert' AND approved = 0`;
-  db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    res.json(results);
-  });
 });
 
 // Update user status (approve, reject, suspend, delete)
@@ -212,7 +216,7 @@ router.put('/admin/users/:id/status', ensureAuthenticated, async (req, res) => {
         }
 
         // Update user status
-        const [result] = await db.promise().query(
+        const [result] = await db.execute(
             'UPDATE users SET approved = ? WHERE id = ?',
             [status, userId]
         );
@@ -235,7 +239,7 @@ router.get('/admin/users', ensureAuthenticated, async (req, res) => {
     }
 
     try {
-        const [users] = await db.promise().query(
+        const [users] = await db.execute(
             'SELECT id, name, email, role, approved, skills FROM users'
         );
         res.json(users);
@@ -260,42 +264,69 @@ router.get('/admin/users', ensureAuthenticated, async (req, res) => {
 
 
 // GET: Return Expert Info for Display Cards
-router.get('/expert-cards', (req, res) => {
+router.get('/expert-cards', async (req, res) => {
+  try {
     const sql = `
-        SELECT id, name, skills, description 
-        FROM users 
-        WHERE role = 'expert'
+      SELECT 
+        u.id AS expert_id,
+        u.name,
+        u.description,
+        s.id AS skill_id, 
+        s.skill_name,
+        s.hourly_rate,
+        s.status
+      FROM users u
+      JOIN skills s ON u.id = s.expert_id
+      WHERE u.role = 'expert' AND u.approved = 1 AND s.status = 'Approved'
     `;
 
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const [rows] = await db.execute(sql);
 
-        // Add mock/default values to enrich the expert card format
-        const formatted = results.map((expert, index) => ({
-  id: expert.id,
-  name: expert.name,
-  skillDataAttr: expert.skills, // ← full raw string or array
-  description: expert.description,
-  location: "Nairobi, Kenya",
-  time: "Morning",
-  price: 1,
-  availableUntil: "01 Jan, 2045",
-  image: "/images/0684456b-aa2b-4631-86f7-93ceaf33303c.jpg"
-}));
+    // Group skills by expert
+    const expertMap = new Map();
 
+    for (const row of rows) {
+      const id = row.expert_id;
 
-        res.json(formatted);
+      if (!expertMap.has(id)) {
+        expertMap.set(id, {
+          id,
+          name: row.name,
+          description: row.description,
+          skillDataAttr: [],
+          time: "Flexible",
+          price: 1,
+          image: "/images/0684456b-aa2b-4631-86f7-93ceaf33303c.jpg"
+        });
+      }
+
+      expertMap.get(id).skillDataAttr.push({
+        skill_id: row.skill_id,
+        skill_name: row.skill_name,
     });
+    }
+
+    // Final formatting
+    const formatted = Array.from(expertMap.values()).map(expert => ({
+      ...expert,
+      skillDataAttr: JSON.stringify(expert.skillDataAttr) // Send as JSON string
+    }));
+
+    res.json(formatted);
+
+  } catch (err) {
+    console.error('Error fetching expert cards:', err);
+    res.status(500).json({ error: 'Failed to load expert cards' });
+  }
 });
 
 
 
 // LOGIN
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
     try {
-        const [rows] = await db.promise().query('SELECT * FROM users WHERE email = ?', [email]);
+        const { email, password } = req.body;
+        const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
             return res.status(401).send('Invalid email or password.');
@@ -330,17 +361,22 @@ router.post('/login', async (req, res) => {
             role: user.role,
         };
 
-        // Role-based redirect
-        if (user.role === 'student') {
-            return res.redirect('/home.html');
-        } else if (user.role === 'expert') {
-            return res.redirect('/expert-dashboard.html');
-        }else if (user.role === 'admin'){
-            req.session.user = { ...user, isAdmin: true };
-            return res.redirect('/admin-dashboard.html');
-        } else {
-            return res.status(400).send('Unknown user role.');
-        }
+        // Save the session before sending response
+        req.session.save(err => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).send('Login failed.');
+            }
+            
+            // Return JSON response
+            return res.json({
+                success: true,
+                userId: user.id,
+                userEmail: user.email,
+                role: user.role
+            });
+        });
+
 
     } catch (error) {
         console.error(error);
