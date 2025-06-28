@@ -1,0 +1,233 @@
+body {
+  background-color: #e1e0e0;
+  color: #000;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* HEADER styles */
+header {
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px 35px; /* Reduced height */
+  position: relative;
+  z-index: 10;
+  
+}
+
+#web-name {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+#web-name i.fa-handshake-angle {
+  color: #000; /* Adjust for white background */
+  font-size: 2.5rem; /* Smaller icon */
+  margin-left: 10px;
+  transition: transform 0.3s ease;
+}
+
+#web-name h1 {
+  font-size: 32px;
+  font-weight: 750;
+}
+
+.blue {
+  color: #126cfc;
+}
+
+.black {
+  color: black;
+}
+
+/* NAV */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-links {
+  display: flex;
+  gap: 35px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-links a {
+  color: black;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #126cfc;
+}
+/* Style for the Login Button */
+.login-btn {
+  padding: 6px 20px;
+  background-color: #126cfc;
+  color: black;
+  font-weight: 600;
+  border-radius: 1px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+}
+
+.login-btn:hover {
+  background-color: transparent;
+  color: #126cfc;
+  border: 1px solid #000;
+  transform: scale(1.0);
+}
+
+/* Style for the Profile Dropdown */
+.user-dropdown {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.profile-icon {
+  font-size: 1.8rem;
+  color: #126cfc;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: white;
+  min-width: 140px;
+  box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+  z-index: 1000;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.user-dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content a {
+  color: #333;
+  text-decoration: none;
+  display: block;
+  padding: 8px 12px;
+  border-radius: 5px;
+}
+
+.dropdown-content a:hover {
+  background-color: #f0f0f0;
+}
+
+.session-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.session-form-container:hover {
+  transform: translateY(-5px);
+}
+
+.session-form-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #000;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #000;
+}
+
+.form-group input[type="text"],
+.form-group input[type="datetime-local"],
+.form-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="datetime-local"]:focus,
+.form-group textarea:focus {
+  border-color: #126cfc;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(18, 108, 252, 0.2);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+  border-radius: 15px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #126cfc;
+  transform: scale(1.02);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .session-form-container {
+    margin: 20px;
+    padding: 20px;
+  }
+  
+  .session-form-container h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animation for form appearance */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.session-form-container {
+  animation: fadeInUp 0.6s ease forwards;
+}

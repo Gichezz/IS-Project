@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Schedule Session | SkillSwap</title>
+  <link rel="stylesheet" href="/allcss/scheduleSession.css">
+  <script src="https://kit.fontawesome.com/f096034737.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <!-- NAVBAR -->
+    <nav>
+      <!-- WEB NAME AND LOGO -->
+      <div id="web-name">
+        <i class="fa-solid fa-handshake-angle"></i>
+        <h1><span class="blue">S</span><span class="black">kill</span><span class="blue">S</span><span class="black">wap</span></h1>
+      </div>
+
+      <!-- NAV LINKS -->
+      <div class="nav-links">
+        <a href="home.html">Home</a>
+        <a href="about.html">About us</a>
+        <a href="skills.html">Skillsphere</a>
+        <a href="contact.html">Contact</a>
+
+        <div id="user-session-area" class="nav-user-slot"></div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="session-form-container">
+    <h2>Schedule Your Session</h2>
+    <form id="sessionRequestForm">
+      <div class="form-group">
+        <label for="skillName">Skill Name</label>
+        <input type="text" id="skillName" name="skillName" readonly>
+      </div>
+      
+      <div class="form-group">
+        <label for="expertName">Expert Name</label>
+        <input type="text" id="expertName" name="expertName" readonly>
+      </div>
+      
+      <div class="form-group">
+        <label for="sessionDate">Session Date & Time</label>
+        <input type="datetime-local" id="sessionDate" name="sessionDate" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="sessionDescription">Session Description</label>
+        <textarea id="sessionDescription" name="sessionDescription" rows="4" required></textarea>
+      </div>
+      
+      <input type="hidden" id="skillId" name="skillId">
+      <input type="hidden" id="expertId" name="expertId">
+      <input type="hidden" id="studentId" name="studentId">
+      <input type="hidden" id="studentEmail" name="studentEmail">
+      
+      <button type="submit" class="submit-btn">Proceed to Payment</button>
+    </form>
+  </div>
+
+  <script src="/alljs/userSession.js"></script>
+  <script src="/alljs/scheduleSession.js"></script>
+</body>
+</html>

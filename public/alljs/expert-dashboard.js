@@ -79,6 +79,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const dropzone = document.getElementById('skill-proof-dropzone');
     const fileInput = document.getElementById('skill-proof');
     const filePreview = document.getElementById('file-preview');
+    const validFileTypes = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'application/pdf': 'pdf'
+    };
 
     // Notification elements
     const notificationBell = document.getElementById('notification-bell');
@@ -125,13 +130,38 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', closeModal);
     });
 
+    function isValidFile(file) {
+        // Check type
+        if (!validFileTypes[file.type]) {
+            showError(`File type not supported: ${file.name}`);
+            return false;
+        }
+        
+        // Check size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showError(`File too large (max 5MB): ${file.name}`);
+            return false;
+        }
+        
+        return true;
+    }
+
     // Click to select files
     dropzone.addEventListener('click', () => fileInput.click());
 
     // Handle file selection
     fileInput.addEventListener('change', () => {
-        if (fileInput.files.length > 0) {
+        const validFiles = Array.from(fileInput.files).filter(isValidFile);
+
+        // Update files list with only valid files
+        const dataTransfer = new DataTransfer();
+        validFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+
+        if (validFiles.length > 0) {
             updateFilePreview();
+        } else {
+            filePreview.innerHTML = '<p class="no-files">No valid files selected</p>';
         }
     });
     
@@ -434,31 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function rescheduleSession(sessionId) {
-        // In a real app, this would open a calendar/rescheduling interface
-        const newTime = prompt('Enter new date and time (YYYY-MM-DD HH:MM):');
-        if (newTime) {
-            fetch(`/api/expert/session-requests/${sessionId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    requested_time: newTime
-                })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to reschedule session');
-                return response.json();
-            })
-            .then(() => {
-                loadSessionRequests();
-                showSuccess('Session rescheduled successfully');
-            })
-            .catch(error => {
-                console.error('Error rescheduling session:', error);
-                showError('Failed to reschedule session. Please try again.');
-            });
-        }
+        window.location.href = `/connect.html?sessionId=${sessionId}`;
     }
     
     function viewSessionFeedback(sessionId) {
@@ -650,9 +656,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function deleteSkill(skillId) {
-        if (confirm('Are you sure you want to delete this skill?')) {
+        if (confirm('Are you sure you want to delete this skill? This will also remove all associated files.')) {
+            const button = document.querySelector(`.delete-skill[data-skill-id="${skillId}"]`);
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            button.disabled = true;
+
             fetch(`/api/expert/skills/${skillId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include'
             })
             .then(response => {
                 if (!response.ok) throw new Error('Failed to delete skill');
@@ -665,6 +676,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error deleting skill:', error);
                 showError('Failed to delete skill. Please try again.');
+            })
+            .finally(() => {
+                button.innerHTML = '<i class="fas fa-trash"></i>';
+                button.disabled = false;
             });
         }
     }
@@ -750,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
     skillForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Simple client validation
+        // Verify files are selected
         const files = fileInput.files;
         if (files.length === 0) {
             showError('Please upload at least one proof file');

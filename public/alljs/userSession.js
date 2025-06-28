@@ -15,6 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
           sessionArea.innerHTML = `<a href="/login.html" class="login-btn">Login</a>`;
         }
       } else {
+
+        // Set sessionStorage from server data
+        sessionStorage.setItem('userId', data.sessionData.userId);
+        sessionStorage.setItem('userEmail', data.sessionData.userEmail);
+        sessionStorage.setItem('isLoggedIn', 'true');
+        
         const user = data.user;
 
         // Update navbar with profile/logout dropdown

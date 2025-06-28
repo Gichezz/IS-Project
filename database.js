@@ -1,50 +1,27 @@
-let mysql = require("mysql2");
+const mysql = require("mysql2/promise")
 
-let db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "admin",
-    port: 3306,
-    database: "skillswap_db" 
+const db = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "admin",
+  database: "skillswap_db",
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
+// Test connection
+db.getConnection()
+  .then(conn => {
+    console.log("Connected to MySQL server");
+    conn.release();
 
-
-
-db.connect(function (err) {
-    if (err) throw err;
-    console.log("CONNECTED TO SQL SERVER SUCCESSFULLY");
-
-   // db.query(createTable, function (err) {
-   //     if (err) throw err;
-   //     console.log("MPESA TABLE CREATED SUCCESSFULLY");
-   // });
-
-
-   
-let userTable=`CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('student', 'expert') DEFAULT 'expert',
-    skills TEXT,             -- For experts only
-    description TEXT,        -- For experts only
-    files TEXT,              -- For experts only
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-)`;
-db.query(userTable, (err) => {
-    if (err) throw err;
-    console.log("User table created or exists.");
-});
-
-
-
-});
-
-
-
+  })
+  .catch(err => {
+    console.error("Database connection failed:", err);
+    process.exit(1);
+  });
 
 
 module.exports = db;

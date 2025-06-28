@@ -14,17 +14,17 @@ function isAdmin(req, res, next) {
 router.get('/stats', isAdmin, async (req, res) => {
     try {
         // Get pending experts count
-        const [pendingExperts] = await db.promise().query(
+        const [pendingExperts] = await db.query(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 0'
         );
         
         // Get total experts count
-        const [totalExperts] = await db.promise().query(
+        const [totalExperts] = await db.query(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 1'
         );
 
         // Get pending skill approvals
-        const [pendingSkills] = await db.promise().query(
+        const [pendingSkills] = await db.query(
             "SELECT COUNT(*) AS count FROM skills WHERE status = 'Pending'"
         );
 
@@ -46,7 +46,7 @@ router.get('/stats', isAdmin, async (req, res) => {
 // Get pending experts
 router.get('/pending-experts', isAdmin, async (req, res) => {
     try {
-        const [experts] = await db.promise().query(
+        const [experts] = await db.query(
             'SELECT * FROM users WHERE role = "expert" AND approved = 0'
         );
         res.json(experts || []);
@@ -63,13 +63,13 @@ router.put('/experts/:id/status', isAdmin, async (req, res) => {
         const { approved } = req.body;
         
         // Update expert status
-        await db.promise().query(
+        await db.query(
             'UPDATE users SET approved = ? WHERE id = ?',
             [approved ? 1 : 0, id]
         );
         
         // Get user info for activity log
-        const [user] = await db.promise().query(
+        const [user] = await db.query(
             'SELECT name, email FROM users WHERE id = ?',
             [id]
         );
@@ -96,7 +96,7 @@ router.put('/users/:id/status', isAdmin, async (req, res) => {
     try{
         const { status } = req.body; // 'active', 'suspended', or 'deleted'
         
-        await db.promise().query(
+        await db.query(
             `UPDATE users 
             SET approved = CASE 
                 WHEN ? = 'deleted' THEN -1 
@@ -138,10 +138,10 @@ router.get('/skills', isAdmin, async (req, res) => {
 
         if (filter !== 'all') {
             query += ` WHERE s.status = ?`;
-            const [skills] = await db.promise().query(query, [filter.charAt(0).toUpperCase() + filter.slice(1)]);
+            const [skills] = await db.query(query, [filter.charAt(0).toUpperCase() + filter.slice(1)]);
             res.json(skills);
         } else {
-            const [skills] = await db.promise().query(query);
+            const [skills] = await db.query(query);
             res.json(skills);
         }
     } catch (error) {
@@ -161,13 +161,13 @@ router.put('/skills/:id/status', isAdmin, async (req, res) => {
         }
         
         // Update skill status
-        await db.promise().query(
+        await db.query(
             'UPDATE skills SET status = ? WHERE id = ?',
             [status, id]
         );
 
         // Get skill info for activity log
-        const [skillRows] = await db.promise().query(
+        const [skillRows] = await db.query(
             'SELECT skill_name, expert_id FROM skills WHERE id = ?',
             [id]
         );
@@ -200,14 +200,27 @@ router.put('/skills/:id/status', isAdmin, async (req, res) => {
 
 const notifyExpert = async (skillId, action, reason = '') => {
     // Get skill and expert info
-    const [skill] = await db.query(
+    const [skillRows] = await db.query(
         'SELECT skill_name, expert_id FROM skills WHERE id = ?', 
         [skillId]
     );
-    const [expert] = await db.query(
+
+    if (skillRows.length === 0) {
+        throw new Error(`Skill with ID ${skillId} not found`);
+    }
+
+    const skill = skillRows[0];
+
+    const [expertRows] = await db.query(
         'SELECT id, email FROM users WHERE id = ?', 
         [skill.expert_id]
     );
+
+    if (expertRows.length === 0) {
+        throw new Error(`Expert with ID ${skill.expert_id} not found`);
+    }
+
+    const expert = expertRows[0];
 
     // Save to database
     await db.query(
