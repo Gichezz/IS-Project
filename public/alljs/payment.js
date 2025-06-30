@@ -1,5 +1,6 @@
 
 document.addEventListener('DOMContentLoaded', function () {
+    
     // Get URL parameters like service and amount
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -79,6 +80,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                     clearInterval(interval);
 
                                     if (result.status === "success") {
+                                        //✅ Store user in localStorage before redirecting
+                         fetch('/api/users/current', { credentials: 'include' })
+        .then(res => res.json())
+        .then(user => {
+            if (user && user.id) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
                                         //  Payment successful
                                         document.getElementById('paymentForm').style.display = 'none';
                                         document.getElementById('confirmationMessage').style.display = 'block';
@@ -87,6 +95,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                       
                                         // Now redirect
                                           window.location.href = `connect.html`; 
+                                          })
+        .catch(err => {
+            console.error("Couldn't fetch user info after payment:", err);
+            alert("Payment succeeded, but we couldn't fetch user info.");
+            window.location.href = `login.html`;
+        });
 
     
                                     } else {

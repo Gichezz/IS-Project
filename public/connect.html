@@ -137,38 +137,28 @@
     </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // ✅ Important: Send credentials (cookies) with the request
-        const response = await fetch('/api/users/current', {
-            credentials: 'include'
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
 
-        const user = await response.json();
+    // Redirect to login if no user found
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-        if (!user || !user.id) {
-            window.location.href = '/login.html';
-            return;
-        }
+if (!currentUser || !currentUser.id) {
+    console.error("No logged-in user found");
+    alert("Please log in to start a conversation.");
+    window.location.href = "/login.html";
+    return;
+}
 
-        document.getElementById('current-user').textContent = user.name;
-        document.getElementById('chat-partner-name').textContent = `Chat Interface`;
+    // Display current user name
+    document.getElementById('current-user').textContent = user.name;
 
-
-        if (!service) {
-            console.warn("No service provided in the URL");
-            document.getElementById('chat-partner-name').textContent = "No service selected";
-            return;
-        }
-
-        document.getElementById('chat-partner-name').textContent = `Chat for Service: ${service}`;
-    } catch (err) {
-        console.error('Error verifying user:', err);
-        window.location.href = '/login.html';
-    }
+    // Set a default title for chat
+    document.getElementById('chat-partner-name').textContent = "Chat Interface";
 });
-
 </script>
+
+
 
 <!--This allows the frontend to connect to the Socket.IO server.-->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>

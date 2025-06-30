@@ -1,14 +1,16 @@
-require("dotenv").config();
 //importing express
 const express=require ("express");
 const path = require('path');
 const http = require("http");
 const socketIo = require("socket.io");
+const cors = require("cors");
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
 
 const db = require("./database");
+require("dotenv").config();
+const { v4: uuidv4 } = require('uuid');
 
 // ===================== Express App Setup =====================
 const app = express();
@@ -30,6 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cors());
 
 //Session setup
 app.use(
@@ -88,12 +91,11 @@ app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
 
+
+
 // All mpesa routes will now be under /api
 const mpesaRoutes = require("./routes/mpesa");
 app.use("/api/mpesa", mpesaRoutes); 
-
-
-
 
 const expertRouter = require('./routes/auth');
 app.use('/register-auth', expertRouter);  
@@ -108,7 +110,7 @@ app.get('/check-session', (req, res) => {
 
 
 
-// ✅ Current User Session Route
+//  Current User Session Route
 app.get("/api/users/current", async (req, res) => {
   try {
     if (!req.session || !req.session.user) {
@@ -129,13 +131,17 @@ app.get("/api/users/current", async (req, res) => {
   }
 });
 
-// ✅ Get User by ID
+// Get User by ID
 app.get("/api/users/:userId", async (req, res) => {
   try {
     const [users] = await db.execute(
-      `SELECT id, name, email, role, online_status FROM users WHERE id = ?`,
-      [req.params.userId]
-    );
+  `SELECT u.id, u.name, u.email, u.role, uc.online_status 
+   FROM users u 
+   LEFT JOIN userconnect uc ON u.id = uc.user_id 
+   WHERE u.id = ?`,
+  [req.params.userId]
+);
+
 
     if (users.length === 0) {
       return res.status(404).json({ error: "User not found" });
@@ -148,7 +154,7 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
-// ✅ Search Users
+// Search Users
 app.get("/api/users/search/:query", async (req, res) => {
   try {
     const [users] = await db.execute(
@@ -163,7 +169,7 @@ app.get("/api/users/search/:query", async (req, res) => {
   }
 });
 
-// ✅ Get Conversations
+// Get Conversations
 app.get("/api/conversations/:userId", async (req, res) => {
   try {
     const [conversations] = await db.execute(`
@@ -186,7 +192,7 @@ app.get("/api/conversations/:userId", async (req, res) => {
   }
 });
 
-// ✅ Get Messages
+// Get Messages
 app.get("/api/messages/:conversationId", async (req, res) => {
   try {
     const [messages] = await db.execute(`
@@ -204,28 +210,63 @@ app.get("/api/messages/:conversationId", async (req, res) => {
   }
 });
 
-// ✅ Create or Get Conversation
+// Mark messages in a conversation as read
+app.post("/api/conversations/:id/read", async (req, res) => {
+  const conversationId = req.params.id;
+  const { userId } = req.body;
+
+  try {
+    console.log(` Marking messages in conversation ${conversationId} as read for user ${userId}`);
+
+    //  Update all messages not sent by the current user as read
+    await db.promise().query(`
+      UPDATE messages 
+      SET is_read = TRUE 
+      WHERE conversation_id = ? AND sender_id != ?
+    `, [conversationId, userId]);
+
+    res.status(200).json({ message: 'Conversation marked as read' });
+  } catch (error) {
+    console.error(" Error marking conversation as read:", error);
+    res.status(500).json({ error: 'Failed to mark as read' });
+  }
+});
+
+// Create or Get Conversation
 app.post("/api/conversations", async (req, res) => {
   const { user1Id, user2Id } = req.body;
 
+  console.log(" Conversation request received:");
+  console.log(" user1Id:", user1Id);
+  console.log(" user2Id:", user2Id);
+
   try {
+    // Check if conversation already exists
     const [existing] = await db.execute(`
       SELECT id FROM conversations 
       WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
     `, [user1Id, user2Id, user2Id, user1Id]);
 
     if (existing.length > 0) {
+      console.log("Conversation already exists:", existing[0].id);
       return res.json({ conversationId: existing[0].id });
     }
 
-    const [result] = await db.execute(
-      `INSERT INTO conversations (user1_id, user2_id) VALUES (?, ?)`,
-      [user1Id, user2Id]
+    // Generate UUID for new conversation
+    const conversationId = uuidv4();
+    console.log(" Creating new conversation with ID:", conversationId);
+
+    // Insert new conversation
+    await db.execute(
+      `INSERT INTO conversations (id, user1_id, user2_id) VALUES (?, ?, ?)`,
+      [conversationId, user1Id, user2Id]
     );
 
-    res.json({ conversationId: result.insertId });
+    console.log(" New conversation created successfully");
+
+    res.json({ conversationId });
   } catch (error) {
-    console.error("Error creating conversation:", error);
+    console.error(" Error creating conversation:", error);
     res.status(500).json({ error: "Failed to create conversation" });
   }
 });

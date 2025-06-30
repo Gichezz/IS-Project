@@ -81,6 +81,9 @@ exports.stkPush = async (req, res) => {
             AccountReference: service,
             TransactionDesc: `${service}:SkillSwap Service Payment`
         };
+             console.log(" Using Callback URL:", process.env.CALLBACK_URL);
+             console.log(" STK Push Request:", stkPushRequest);
+
 
         const response = await axios.post(
             "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
@@ -103,6 +106,17 @@ exports.stkPush = async (req, res) => {
             status: "pending"
         });
 
+setTimeout(() => {
+    const currentStatus = paymentStatusMap.get(checkoutID);
+    if (currentStatus && currentStatus.status === 'pending') {
+        paymentStatusMap.set(checkoutID, {
+            ...currentStatus,
+            status: "timeout",
+            message: "No response from M-Pesa "
+        });
+        console.warn("⏳ Timeout - No callback for:", checkoutID);
+    }
+},  30 * 1000); 
         res.json({
             success: true,
             message: "STK Push sent",
@@ -117,6 +131,7 @@ exports.stkPush = async (req, res) => {
     }
 };
 
+
 // ===================== 4. Check Payment Status =====================
 function getPaymentStatus(checkoutID) {
     const status = paymentStatusMap.get(checkoutID);
@@ -128,15 +143,14 @@ exports.checkPaymentStatus = async (req, res) => {
     const status = await getPaymentStatus(checkoutID);
     console.log("📡 Payment status check for:", checkoutID, "→", status);
 
-
     if (status.found && status.phone) {
         pendingPayments.delete(status.phone);
     }
-
     res.json(status);
 };
 
-// ===================== 5. M-Pesa Callback Handler =====================
+
+//===================== 5. M-Pesa Callback Handler =====================
 exports.mpesaCallback = (req, res) => {
     const db = require("../database");
     const formatDateTime = require("../formatDateTime");
@@ -192,13 +206,7 @@ exports.mpesaCallback = (req, res) => {
             }
 
             console.log("✅ M-Pesa Payment Recorded Successfully");
-            // Delay cleanup to give frontend time to poll
-setTimeout(() => {
-    paymentStatusMap.delete(checkoutRequestID);
-    console.log("🧹 Cleaned up payment status for", checkoutRequestID);
-}, 20 * 1000); // 20 seconds
-
-res.sendStatus(200); // Respond to Safaricom right away
+            
 
 
             const tutorQuery = `SELECT email FROM users WHERE role = 'expert' AND skills LIKE ? LIMIT 1`;
@@ -217,6 +225,14 @@ res.sendStatus(200); // Respond to Safaricom right away
                 } else {
                     console.warn("⚠️ No tutor found matching service:", service_name);
                 }
+                // Cleanup and respond
+                setTimeout(() => {
+                    paymentStatusMap.delete(checkoutRequestID);
+                    console.log("🧹 Cleaned up payment status for", checkoutRequestID);
+                }, 20 * 1000);
+
+                res.sendStatus(200); // Respond once everything is handled
+          
             });
         });
     } else {
