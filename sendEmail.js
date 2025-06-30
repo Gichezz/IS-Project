@@ -8,13 +8,25 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const sendEmail = async (to, subject, text) => {
+/**
+ * Sends an email with optional HTML support
+ * @param {string} to - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} text - Plain text content (for fallback)
+ * @param {string} html - HTML content (optional)
+ */
+
+const sendEmail = async (to, subject, text, html) => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to,
         subject,
         text,
     };
+
+    if (html) {
+        mailOptions.html = html;
+    }
 
     try {
         await transporter.sendMail(mailOptions);

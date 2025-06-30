@@ -1,10 +1,12 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const crypto = require('crypto');
 const multer = require("multer");
 const path = require("path");
 const db = require('../database');
 const router = express.Router();
 const Activity = require('./activity');
+const sendEmail = require('../sendEmail')
 
 
 // Multer storage config
@@ -33,38 +35,41 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
+
         const sql = `
             INSERT INTO users (id, name, email, password, role, skills)
             VALUES (UUID(), ?, ?, ?, 'student', ?)
         `;
 
-        db.execute(sql, [name, email, hashedPassword, selectedSkills], async(err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).send('Email already in use.');
-                }
-                return res.status(500).send('Database error: ' + err.message);
-            }
+        console.log("Registering student...");
+        // Insert user
+        await db.execute(sql, [name, email, hashedPassword, selectedSkills]);
 
-            // 🟩 ✅ Fetch UUID of newly registered student
-            const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
-            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+        // Retrieve inserted UUID
+        const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
+        const insertedId = rows[0]?.id;
 
-            Activity.create({
-                userId: insertedId, // 🟩 ✅ Use actual UUID
+        // Log activity
+        try {
+            await Activity.create({
+                userId: insertedId,
                 type: 'New Registration',
                 description: `${name} (${email}) registered as student`
-            })
-            .then(() => res.redirect('/login.html'))
-            .catch(err => {
-                console.error('Error creating activity:', err);
-                res.redirect('/login.html');
             });
-        });
+        } catch (activityErr) {
+            console.error('Activity log failed:', activityErr);
+        }
+
+        return res.redirect('/login.html');
     } catch (err) {
-        res.status(500).send('Server error: ' + err.message);
+        console.error('Registration error:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).send('Email already in use.');
+        }
+        return res.status(500).send('Server error: ' + err.message);
     }
 });
+
 
 
 // EXPERT REGISTRATION 
@@ -111,7 +116,21 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 type: 'New Registration',
                 description: `${name} (${email}) registered as expert`
             })
-            .then(() => res.redirect('/login.html'))
+            .then( async () => {
+                await sendEmail(
+                    email,
+                    'Welcome to SkillSwap!',
+                    `Hello ${name}, thank you for registering as an expert on SkillSwap. Your account is under review.`,
+                    `
+                        <h2>Hello ${name},</h2>
+                        <p>Thank you for registering as an <strong>expert</strong> on <span style="color:#2ecc71;">SkillSwap</span>.</p>
+                        <p>Your account is under review. We'll notify you once approved.</p>
+                        <br/>
+                        <p>Best,<br/>SkillSwap</p>
+                    `
+                );
+                 res.redirect('/login.html')
+            })
             .catch(err => {
                 console.error('Error creating activity:', err);
                 res.redirect('/login.html');
@@ -329,14 +348,14 @@ router.post('/login', async (req, res) => {
         const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
-            return res.status(401).send('Invalid email or password.');
+            return res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
 
         const user = rows[0];
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
-            return res.status(401).send('Invalid email or password.');
+            return res.status(401).json({ success: false, message: 'Invalid email or password.' });
         }
 
         // Block unapproved experts
@@ -350,7 +369,7 @@ router.post('/login', async (req, res) => {
             } catch (activityErr) {
                 console.error('Failed to log blocked login activity:', activityErr);
             }
-            return res.status(403).send('Your account is pending for approval.');
+            return res.status(403).json({ success: false, message: 'Your account is pending approval.' });
         }
 
         // Save login session
@@ -365,7 +384,7 @@ router.post('/login', async (req, res) => {
         req.session.save(err => {
             if (err) {
                 console.error('Session save error:', err);
-                return res.status(500).send('Login failed.');
+                return res.status(500).json({ success: false, message: 'Login failed.' });
             }
             
             // Return JSON response
@@ -380,7 +399,102 @@ router.post('/login', async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        return res.status(500).send('Server error. Please try again.');
+        return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+    }
+});
+
+// forgot password route
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    try {
+        const [users] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (users.length === 0) {
+            // Return success message even if email doesn't exist to prevent email harvesting
+            return res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
+        }
+
+        const user = users[0];
+
+        // Generate secure token and expiry
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+        // Save token to database
+        await db.execute(
+            'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE email = ?',
+            [token, expires, email]
+        );
+
+        const resetLink = `http://localhost:3010/resetPassword.html?token=${token}`; // adjust your domain
+
+        const text = `
+            Hello ${user.name},
+
+            You requested a password reset. Click the link below to reset your password:
+            ${resetLink}
+
+            If you did not request this, you can safely ignore this email.
+
+            - SkillSwap Team
+        `;
+
+        const html = `
+            <p>Hello ${user.name},</p>
+            <p>You requested a password reset. Click the link below to reset your password:</p>
+            <a href="${resetLink}">${resetLink}</a>
+            <p>If you did not request this, you can safely ignore this email.</p>
+            <p>- SkillSwap Team</p>
+        `;
+
+        await sendEmail(email, 'Password Reset Request', text, html);
+
+        return res.status(200).json({ message: 'A reset link has been sent to your email.' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        return res.status(500).json({ message: 'Something went wrong. Please try again.' });
+    }
+});
+
+// reset password route
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Missing token or password.' });
+    }
+
+    try {
+        // Check for user with this reset token and valid expiry
+        const [rows] = await db.execute(
+            'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW()',
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid or expired token.' });
+        }
+
+        const user = rows[0];
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update user's password and clear token fields
+        await db.execute(
+            'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        return res.json({ message: 'Password reset successful.' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        return res.status(500).json({ message: 'Server error. Please try again.' });
     }
 });
 
