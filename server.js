@@ -1,3 +1,4 @@
+require("dotenv").config();
 //importing express
 const express=require ("express");
 const path = require('path');
@@ -9,7 +10,7 @@ const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
 
 const db = require("./database");
-require("dotenv").config();
+
 const { v4: uuidv4 } = require('uuid');
 
 // ===================== Express App Setup =====================
