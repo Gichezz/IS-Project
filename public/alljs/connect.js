@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeConversation = null;
     
 
-<<<<<<< HEAD
 
 
     // Fetch user from server session
@@ -39,28 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert("Please log in to continue.");
             window.location.href = "/login.html";
             return null;
-=======
-    // Session check
-    async function checkSessionAndStart() {
-        try {
-            const res = await fetch('/session', { credentials: 'include' });
-            const sessionData = await res.json();
-
-            if (!sessionData.loggedIn || !sessionData.user) {
-                alert("Please log in to continue.");
-                window.location.href = "/login.html";
-                return;
-            }
-
-            currentUser = sessionData.user;
-
-            connectSocket();
-            loadConversations();
-        } catch (err) {
-            console.error("Session check error:", err);
-            alert("Session error. Please log in again.");
-            window.location.href = "/login.html";
->>>>>>> d21872c081e798cb9b8e95553dfcdb8a35499ed6
         }
     }
     
@@ -452,7 +429,6 @@ async function scheduleMeeting() {
     searchUserInput.addEventListener('input', searchUsers);
     confirmNewChat.addEventListener('click', createNewConversation);
     attachBtn.addEventListener('click', showAttachmentOptions);
-<<<<<<< HEAD
    
     function connectSocket() {
   if (!socket || !currentUser) return;
@@ -490,9 +466,4 @@ async function scheduleMeeting() {
     connectSocket();
     loadConversations();
      })();
-=======
-    
-    // Initialize
-    checkSessionAndStart();
->>>>>>> d21872c081e798cb9b8e95553dfcdb8a35499ed6
 });
