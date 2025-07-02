@@ -8,6 +8,7 @@ const cors = require("cors");
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
+const userRoutes = require('./routes/userRoutes');
 
 const db = require("./database");
 
@@ -91,6 +92,7 @@ app.use('/', authRoutes);
 app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
+app.use(userRoutes);
 
 
 

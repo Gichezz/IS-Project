@@ -107,12 +107,12 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 return res.status(500).send('Database error: ' + err.message);
             }
 
-            // 🟩 ✅ Fetch UUID of newly registered expert
+            // Fetch UUID of newly registered expert
             const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
-            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+            const insertedId = rows[0]?.id; //  This replaces result.insertId
 
             Activity.create({
-                userId: insertedId, // 🟩 ✅ Use actual UUID
+                userId: insertedId, //  Use actual UUID
                 type: 'New Registration',
                 description: `${name} (${email}) registered as expert`
             })

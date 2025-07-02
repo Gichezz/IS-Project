@@ -136,27 +136,33 @@
         </div>
     </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/session', { credentials: 'include' });
+                const data = await res.json();
 
-    // Redirect to login if no user found
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!data.loggedIn || !data.user) {
+                    alert("Please log in to start a conversation.");
+                    window.location.href = "/login.html";
+                    return;
+                }
 
-if (!currentUser || !currentUser.id) {
-    console.error("No logged-in user found");
-    alert("Please log in to start a conversation.");
-    window.location.href = "/login.html";
-    return;
-}
+                const currentUser = data.user;
 
-    // Display current user name
-    document.getElementById('current-user').textContent = user.name;
+                // Display current user name
+                document.getElementById('current-user').textContent = currentUser.name;
 
-    // Set a default title for chat
-    document.getElementById('chat-partner-name').textContent = "Chat Interface";
-});
-</script>
+                // Set a default title for chat
+                document.getElementById('chat-partner-name').textContent = "Chat Interface";
+
+            } catch (err) {
+                console.error("Session fetch failed:", err);
+                alert("Session error. Please log in.");
+                window.location.href = "/login.html";
+            }
+        });
+    </script>
 
 
 

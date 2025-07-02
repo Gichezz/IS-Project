@@ -3,50 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSwap</title>
+  <title>My Profile | SkillSwap</title>
   <link rel="stylesheet" href="/allcss/profile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
   <div class="profile-container">
     <div class="profile-header">
-      <img src="/images/default-profile.png" alt="Profile Picture" class="profile-pic">
-      <h2 class="user-name">[User Name]</h2>
-      <p class="user-email">[User Email]</p>
-    </div>
-
-    <!-- For Students -->
-    <div class="student-section" style="display: none;">
-      <h3>Favourite Skills</h3>
-      <ul class="favourite-skills">
-        <li>Skill A</li>
-        <li>Skill B</li>
-      </ul>
-
-      <h3>My Sessions</h3>
-      <div class="session-list">
-        <div class="session-item">
-          <p><strong>Skill:</strong> Baking</p>
-          <p><strong>Expert:</strong> John Doe</p>
-          <p><strong>Status:</strong> Accepted</p>
-          <button class="mark-completed-btn">Mark as Completed</button>
-        </div>
+      <div class="profile-pic-container">
+        <img src="/images/default-profile.png" alt="Profile Picture" class="profile-pic">
+      </div>
+      <div class="profile-info">
+        <h1 class="user-name">[User Name]</h1>
+        <p class="user-email"><i class="fas fa-envelope"></i> [User Email]</p>
       </div>
     </div>
 
-    <!-- For Experts -->
-    <div class="expert-section" style="display: none;">
-      <h3>Skills I Offer</h3>
-      <ul class="offered-skills">
-        <li>Web Development</li>
-        <li>AI & ML</li>
-      </ul>
-      <a href="/upload-skill.html" class="upload-skill-btn">Upload New Skill</a>
-    </div>
-    <div class="go_back_text">
-      <a href="home.html">Go Back</a>
-    </div>
+    <div class="profile-content">
+      <!-- For Students -->
+      <div class="student-section">
+        <section class="profile-section">
+          <h2 class="section-title"><i class="fas fa-star"></i> Favourite Skills</h2>
+          <div class="skills-container">
+            <!-- Favourite skills will be loaded here -->
+          </div>
+        </section>
 
-   </div>
+        <section class="profile-section">
+          <h2 class="section-title"><i class="fas fa-calendar-check"></i> My Sessions</h2>
+          <div class="session-list">
+            <div class="session-item">
+              <div class="session-info">
+                <div class="session-detail">
+                  <i class="fas fa-book"></i>
+                  <span><strong>Skill:</strong> Baking</span>
+                </div>
+                <div class="session-detail">
+                  <i class="fas fa-user-tie"></i>
+                  <span><strong>Expert:</strong> John Doe</span>
+                </div>
+                <div class="session-detail">
+                  <i class="fas fa-info-circle"></i>
+                  <span><strong>Status:</strong> <span class="status-accepted">Accepted</span></span>
+                </div>
+              </div>
+              <div class="session-actions">
+                <button class="btn chat-btn">
+                  <i class="fas fa-comments"></i> Chat
+                </button>
+                <button class="btn complete-btn">
+                  <i class="fas fa-check-circle"></i> Mark Completed
+                </button>
+              </div>
+            </div>
+            
+            <!-- Example of a completed session -->
+            <div class="session-item completed">
+              <div class="session-info">
+                <div class="session-detail">
+                  <i class="fas fa-book"></i>
+                  <span><strong>Skill:</strong> Photography</span>
+                </div>
+                <div class="session-detail">
+                  <i class="fas fa-user-tie"></i>
+                  <span><strong>Expert:</strong> Jane Smith</span>
+                </div>
+                <div class="session-detail">
+                  <i class="fas fa-info-circle"></i>
+                  <span><strong>Status:</strong> <span class="status-completed">Completed</span></span>
+                </div>
+              </div>
+              <div class="session-actions">
+                <button class="btn chat-btn" disabled>
+                  <i class="fas fa-comments"></i> Chat
+                </button>
+                <button class="btn complete-btn" disabled>
+                  <i class="fas fa-check-circle"></i> Completed
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="action-buttons">
+        <a href="home.html" class="btn back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
 
   <script src="/alljs/profile.js"></script>
 </body>
