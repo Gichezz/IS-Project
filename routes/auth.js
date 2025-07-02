@@ -18,9 +18,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-// STUDENT REGISTRATION 
+
+
+
+
+// STUDENT REGISTRATION  
 router.post('/register-student', async (req, res) => {
     const { name, email, password, selectedSkills } = req.body;
+    console.log("📥 Student Registration Request:", { name, email, password, selectedSkills });
 
     if (!name || !email || !password || !selectedSkills) {
         return res.status(400).send('Please fill in all required fields.');
@@ -33,36 +38,38 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("🔐 Hashed Password:", hashedPassword);
+
         const sql = `
-            INSERT INTO users (id, name, email, password, role, skills)
-            VALUES (UUID(), ?, ?, ?, 'student', ?)
-        `;
+    INSERT INTO users (id, name, email, password, role, skills)
+    VALUES (UUID(), ?, ?, ?, 'student', ?)
+`;
 
-        db.execute(sql, [name, email, hashedPassword, selectedSkills], async(err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).send('Email already in use.');
-                }
-                return res.status(500).send('Database error: ' + err.message);
-            }
 
-            // 🟩 ✅ Fetch UUID of newly registered student
-            const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
-            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills]);
+        console.log("✅ Inserted:", result);
 
-            Activity.create({
-                userId: insertedId, // 🟩 ✅ Use actual UUID
-                type: 'New Registration',
-                description: `${name} (${email}) registered as student`
-            })
-            .then(() => res.redirect('/login.html'))
-            .catch(err => {
-                console.error('Error creating activity:', err);
-                res.redirect('/login.html');
-            });
+        // Fetch UUID of newly registered student
+        const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
+        const insertedId = rows[0]?.id;
+        console.log("✅ Inserted Student ID:", insertedId);
+
+        await Activity.create({
+            userId: insertedId,
+            type: 'New Registration',
+            description: `${name} (${email}) registered as student`
         });
+        res.status(200).json({ success: true });
+
+
+       
+
     } catch (err) {
-        res.status(500).send('Server error: ' + err.message);
+        console.error("❌ Error during registration:", err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).send('Email already in use.');
+        }
+        res.status(500).send('Database error: ' + err.message);
     }
 });
 
@@ -71,6 +78,8 @@ router.post('/register-student', async (req, res) => {
 router.post('/register-expert', upload.array('files'), async (req, res) => {
     const { name, email, password, selectedSkills, description } = req.body;
     const files = req.files;
+
+    console.log("📥 Expert Registration Request:", { name, email, password, selectedSkills, description, files });
 
     if (!name || !email || !password || !description || !selectedSkills) {
         return res.status(400).send("Please fill in all required fields.");
@@ -89,36 +98,36 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const fileNames = files.map(f => f.filename).join(',');
 
+        console.log("🔐 Hashed Password:", hashedPassword);
+        console.log("📎 Uploaded Files:", fileNames);
+
         const sql = `
             INSERT INTO users (id, name, email, password, role, skills, description, files)
             VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
         `;
 
-        db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], async (err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).send('Email already in use.');
-                }
-                return res.status(500).send('Database error: ' + err.message);
-            }
+        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames]);
+        console.log("✅ Expert Insert Result:", result);
 
-            // 🟩 ✅ Fetch UUID of newly registered expert
-            const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
-            const insertedId = rows[0]?.id; // 🟩 ✅ This replaces result.insertId
+        // Fetch UUID of newly registered expert
+        const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
+        const insertedId = rows[0]?.id;
+        console.log("✅ Inserted Expert ID:", insertedId);
 
-            Activity.create({
-                userId: insertedId, // 🟩 ✅ Use actual UUID
-                type: 'New Registration',
-                description: `${name} (${email}) registered as expert`
-            })
-            .then(() => res.redirect('/login.html'))
-            .catch(err => {
-                console.error('Error creating activity:', err);
-                res.redirect('/login.html');
-            });
+        await Activity.create({
+            userId: insertedId,
+            type: 'New Registration',
+            description: `${name} (${email}) registered as expert`
         });
+
+        res.redirect('/login.html');
+
     } catch (err) {
-        res.status(500).send("Server error: " + err.message);
+        console.error("❌ Expert Registration Error:", err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).send('Email already in use.');
+        }
+        return res.status(500).send('Database error: ' + err.message);
     }
 });
 
@@ -126,6 +135,7 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
 // ADMIN REGISTRATION
 router.post('/register-admin', async (req, res) => {
     const { name, email, password, adminKey } = req.body;
+    console.log("📥 Admin Registration Request:", { name, email, password, adminKey });
 
     // 1. Validate secret key
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
@@ -151,6 +161,8 @@ router.post('/register-admin', async (req, res) => {
 
         // 4. Create admin
         const hashedPassword = await bcrypt.hash(password, 10); // hash first
+        console.log("🔐 Hashed Password (admin):", hashedPassword);
+
         const [result] = await db.execute(
             `INSERT INTO users (id, name, email, password, role, approved, skills)
             VALUES (UUID(), ?, ?, ?, ?, ?, ?)`,
@@ -158,15 +170,15 @@ router.post('/register-admin', async (req, res) => {
         );
 
         // Retrieve UUID from DB
-        const [[user]] = await db.execute(
+        const [user] = await db.execute(
         `SELECT id FROM users WHERE email = ? AND role = 'admin'`,
         [email]
         );
-
+        
         // Use correct UUID for activity
         try{
             await Activity.create({
-            userId: user.id,
+                userId: user[0].id,
             type: 'New Registration',
             description: `${name} (${email}) registered as admin`
         });
@@ -295,7 +307,7 @@ router.get('/expert-cards', async (req, res) => {
           description: row.description,
           skillDataAttr: [],
           time: "Flexible",
-          price: 1,
+          price: row.hourly_rate,
           image: "/images/0684456b-aa2b-4631-86f7-93ceaf33303c.jpg"
         });
       }
@@ -329,14 +341,16 @@ router.post('/login', async (req, res) => {
         const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
-            return res.status(401).send('Invalid email or password.');
+            return res.status(401).json({ error: 'Invalid email or password.' });
+
         }
 
         const user = rows[0];
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
-            return res.status(401).send('Invalid email or password.');
+            return res.status(401).json({ error: 'Invalid email or password.' });
+
         }
 
         // Block unapproved experts
@@ -350,7 +364,7 @@ router.post('/login', async (req, res) => {
             } catch (activityErr) {
                 console.error('Failed to log blocked login activity:', activityErr);
             }
-            return res.status(403).send('Your account is pending for approval.');
+            return res.status(403).json({ error: 'Your account is pending for approval.' });
         }
 
         // Save login session
@@ -365,7 +379,7 @@ router.post('/login', async (req, res) => {
         req.session.save(err => {
             if (err) {
                 console.error('Session save error:', err);
-                return res.status(500).send('Login failed.');
+                return res.status(500).json({ error: 'Login failed.' });
             }
             
             // Return JSON response
@@ -380,7 +394,7 @@ router.post('/login', async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        return res.status(500).send('Server error. Please try again.');
+        return res.status(500).json({ error: 'Server error. Please try again.' });
     }
 });
 
@@ -404,5 +418,14 @@ function ensureAuthenticated(req, res, next) {
 router.get('/profile', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/profile.html'));
 });
+// GET: Current Logged-in User
+router.get('/current', (req, res) => {
+  if (req.session.user) {
+    res.json(req.session.user);
+  } else {
+    res.status(401).json({ message: 'Not logged in' });
+  }
+});
+
 
 module.exports = router;

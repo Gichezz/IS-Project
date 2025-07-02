@@ -35,6 +35,7 @@
             
             const response = await fetch("/register-admin", {
                 method: "POST",
+                credentials: 'include',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: document.getElementById("name").value,

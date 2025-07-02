@@ -1,3 +1,4 @@
+require("dotenv").config();
 //importing express
 const express=require ("express");
 const path = require('path');
@@ -9,7 +10,7 @@ const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
 
 const db = require("./database");
-require("dotenv").config();
+
 const { v4: uuidv4 } = require('uuid');
 
 // ===================== Express App Setup =====================
@@ -17,7 +18,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*",
+    origin: "http://127.0.0.1:3010",
+    credentials: true,
     methods: ["GET", "POST"]
   }
 });
@@ -32,7 +34,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors());
+
+// ✅ CORS Setup (BEFORE session)
+app.use(cors({
+  origin: 'http://127.0.0.1:3010', // Set exact origin
+  credentials: true
+}));
 
 //Session setup
 app.use(
@@ -49,7 +56,8 @@ app.use(
 // Session verification middleware to protected routes
 app.use((req, res, next) => {
     // Paths that don't require authentication
-    const publicPaths = ['/login', '/register', '/session', '/login.html', '/register.html'];
+    const publicPaths = ['/login',  '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html','/register-student','/register-expert',
+  '/register-admin'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -117,7 +125,7 @@ app.get("/api/users/current", async (req, res) => {
     }
 
     const userId = req.session.user.id;
-    const [rows] = await db.promise().query("SELECT * FROM users WHERE id = ?", [userId]);
+    const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
 
     if (rows.length > 0) {
       res.json(rows[0]);
@@ -133,7 +141,7 @@ app.get("/api/users/current", async (req, res) => {
 // ✅ Get User by ID
 app.get("/api/users/:userId", async (req, res) => {
   try {
-    const [users] = await db.promise().query(
+    const [users] = await db.execute(
   `SELECT u.id, u.name, u.email, u.role, uc.online_status 
    FROM users u 
    LEFT JOIN userconnect uc ON u.id = uc.user_id 
@@ -156,7 +164,7 @@ app.get("/api/users/:userId", async (req, res) => {
 // ✅ Search Users
 app.get("/api/users/search/:query", async (req, res) => {
   try {
-    const [users] = await db.promise().query(
+    const [users] = await db.execute(
       `SELECT id, name, email, role FROM users WHERE name LIKE ? OR email LIKE ? LIMIT 10`,
       [`%${req.params.query}%`, `%${req.params.query}%`]
     );
@@ -171,7 +179,7 @@ app.get("/api/users/search/:query", async (req, res) => {
 // ✅ Get Conversations
 app.get("/api/conversations/:userId", async (req, res) => {
   try {
-    const [conversations] = await db.promise().query(`
+    const [conversations] = await db.execute(`
       SELECT c.id, 
              u1.id as user1_id, u1.name as user1_name, u1.role as user1_role,
              u2.id as user2_id, u2.name as user2_name, u2.role as user2_role,
@@ -194,7 +202,7 @@ app.get("/api/conversations/:userId", async (req, res) => {
 // ✅ Get Messages
 app.get("/api/messages/:conversationId", async (req, res) => {
   try {
-    const [messages] = await db.promise().query(`
+    const [messages] = await db.execute(`
       SELECT m.*, u.name as sender_name, u.role as sender_role
       FROM messages m
       JOIN users u ON m.sender_id = u.id
@@ -218,7 +226,7 @@ app.post("/api/conversations/:id/read", async (req, res) => {
     console.log(`📖 Marking messages in conversation ${conversationId} as read for user ${userId}`);
 
     // ✅ Update all messages not sent by the current user as read
-    await db.promise().query(`
+    await db.execute(`
       UPDATE messages 
       SET is_read = TRUE 
       WHERE conversation_id = ? AND sender_id != ?
@@ -241,7 +249,7 @@ app.post("/api/conversations", async (req, res) => {
 
   try {
     // Check if conversation already exists
-    const [existing] = await db.promise().query(`
+    const [existing] = await db.execute(`
       SELECT id FROM conversations 
       WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)
     `, [user1Id, user2Id, user2Id, user1Id]);
@@ -256,7 +264,7 @@ app.post("/api/conversations", async (req, res) => {
     console.log("🆕 Creating new conversation with ID:", conversationId);
 
     // Insert new conversation
-    await db.promise().query(
+    await db.execute(
       `INSERT INTO conversations (id, user1_id, user2_id) VALUES (?, ?, ?)`,
       [conversationId, user1Id, user2Id]
     );
@@ -283,18 +291,22 @@ io.on("connection", (socket) => {
 
   socket.on("private-message", async ({ senderId, receiverId, content, conversationId }) => {
     try {
-      const [result] = await db.promise().query(
-        "INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)",
-        [conversationId, senderId, content]
-      );
+      const messageId = uuidv4(); // 👈 Generate unique message ID
+const [result] = await db.execute(
+  "INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?, ?)",
+  [messageId, conversationId, senderId, content]
+);
+
+
+      
 
       const message = {
-        id: result.insertId,
-        senderId,
-        content,
-        timestamp: new Date(),
-        conversationId
-      };
+  id: messageId, // 👈 Use the UUID here
+  senderId,
+  content,
+  timestamp: new Date(),
+  conversationId
+};
 
       if (onlineUsers.has(receiverId)) {
         io.to(onlineUsers.get(receiverId)).emit("new-message", message);
@@ -309,7 +321,7 @@ io.on("connection", (socket) => {
 
   socket.on("schedule-meeting", async ({ tutorId, studentId, meetingDetails }) => {
     try {
-      const [result] = await db.promise().query(
+      const [result] = await db.execute(
         "INSERT INTO meetings (tutor_id, student_id, meeting_time, duration, meeting_link) VALUES (?, ?, ?, ?, ?)",
         [tutorId, studentId, meetingDetails.startTime, meetingDetails.duration, meetingDetails.link]
       );

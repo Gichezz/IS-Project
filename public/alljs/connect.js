@@ -1,4 +1,6 @@
+let socket = null;
 document.addEventListener('DOMContentLoaded', function() {
+     (async function () {
     // DOM Elements
     const conversationList = document.getElementById('conversation-list');
     const messagesContainer = document.getElementById('messages-container');
@@ -17,48 +19,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const attachBtn = document.getElementById('attach-btn');
 
     // Global variables
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let currentUser = null;
     let activeConversation = null;
-    let socket = null;
+    
 
-    if (!currentUser || !currentUser.id) {
-        console.error("No logged-in user found.");
-        alert("Please log in to continue.");
-        window.location.href = "/login.html";
-        return;
+
+
+    // Fetch user from server session
+    async function getCurrentUserFromSession() {
+        try {
+            const res = await fetch('/api/users/current', {
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error("Not authenticated");
+            return await res.json();
+        } catch (err) {
+            console.error('❌ Error fetching user from session:', err);
+            alert("Please log in to continue.");
+            window.location.href = "/login.html";
+            return null;
+        }
     }
-    //Define updateConversationList so real-time doesn't fail
+    
+
+    currentUser = await getCurrentUserFromSession();
+    if (!currentUser || !currentUser.id) return;
+
+    // Initialize socket
+    socket = io("http://127.0.0.1:3010");
+    socket.emit("authenticate", currentUser.id);
+
+
+
+    // For displaying current user in header
+    const currentUserDisplay = document.getElementById('current-user');
+    if (currentUserDisplay) currentUserDisplay.textContent = currentUser.name;
+
+    // Define updateConversationList so real-time doesn't fail
     function updateConversationList() {
         loadConversations();
-    }
-
-    // Connect to Socket.IO
-    function connectSocket() {
-        socket = io();
-        socket.emit('authenticate', currentUser.id);
-
-        socket.on('new-message', (message) => {
-            if (activeConversation && activeConversation.id === message.conversationId) {
-                addMessageToUI(message);
-            }
-            updateConversationList();
-        });
-
-        socket.on('user-status-changed', ({ userId, status }) => {
-            if (activeConversation && (activeConversation.user1_id === userId || activeConversation.user2_id === userId)) {
-                updatePartnerStatus(status);
-            }
-            updateConversationList();
-        });
-
-        socket.on('new-meeting', (meeting) => {
-            if (
-                (activeConversation?.user1_id === meeting.tutorId || activeConversation?.user2_id === meeting.tutorId) &&
-                (activeConversation?.user1_id === meeting.studentId || activeConversation?.user2_id === meeting.studentId)
-            ) {
-                addMeetingToUI(meeting);
-            }
-        });
+        
     }
 
     async function loadConversations() {
@@ -155,37 +155,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
         messages.forEach(addMessageToUI);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // ✅ Mark as read when user loads messages
+    markAsRead(activeConversation.id);
     }
 
     function addMessageToUI(msg) {
-        const isCurrentUser = msg.sender_id === currentUser.id;
+        console.log('✉️ Message received:', msg, ' | Current user:', currentUser.id);
+        const senderId = msg.senderId || msg.sender_id;
+        const isCurrentUser = senderId === currentUser.id; 
+
         const messageElement = document.createElement('div');
         messageElement.className = `message ${isCurrentUser ? 'message-sent' : 'message-received'}`;
 
-        if (msg.content.includes('zoom.us') || msg.content.includes('meet.google.com')) {
-            messageElement.innerHTML = `
+        messageElement.innerHTML = msg.content.includes('zoom.us') || msg.content.includes('meet.google.com') ? `
                 <div class="message-text">
                     <strong>Meeting Link</strong><br>
                     <a href="${msg.content}" target="_blank" class="meeting-link">Join Meeting</a>
                 </div>
                 <div class="message-info">
                     <span>${formatTime(msg.timestamp)}</span>
-                    ${isCurrentUser ? '<span class="message-status delivered"><i class="fas fa-check"></i></span>' : ''}
+                  ${isCurrentUser ? `<span class="message-status ${msg.read ? 'read' : 'delivered'}"><i class="fas fa-check${msg.read ? '-double' : ''}"></i></span>` : ''}
+
                 </div>
-            `;
-        } else {
-            messageElement.innerHTML = `
+            ` : `
                 <div class="message-text">${msg.content}</div>
                 <div class="message-info">
                     <span>${formatTime(msg.timestamp)}</span>
-                    ${isCurrentUser ? '<span class="message-status delivered"><i class="fas fa-check"></i></span>' : ''}
+                    ${isCurrentUser ? `<span class="message-status ${msg.read ? 'read' : 'delivered'}"><i class="fas fa-check${msg.read ? '-double' : ''}"></i></span>` : ''}
+
                 </div>
             `;
+
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        messagesContainer.appendChild(messageElement);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
 
     async function markAsRead(conversationId) {
         try {
@@ -248,47 +252,110 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function createNewConversation() {
-        const userId = confirmNewChat.dataset.userId;
-        const message = initialMessage.value.trim();
+   async function createNewConversation() {
+    const userId = confirmNewChat.dataset.userId;
+    const message = initialMessage.value.trim();
 
-        if (!userId || !message) {
-            alert('Please select a user and write a message');
+    if (!userId || !message) {
+        alert('Please select a user and write a message');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user1Id: currentUser.id, user2Id: userId })
+        });
+
+        const { conversationId } = await response.json();
+
+        if (!conversationId) {
+            console.error("❌ No conversation ID returned");
             return;
         }
 
-        try {
-            const response = await fetch('/api/conversations', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ user1Id: currentUser.id, user2Id: userId })
-});
+        socket.emit('private-message', {
+            senderId: currentUser.id,
+            receiverId: userId,
+            content: message,
+            conversationId
+        });
 
-const { conversationId } = await response.json();
+        newChatModal.classList.remove('show');
+        searchUserInput.value = '';
+        initialMessage.value = '';
+        delete confirmNewChat.dataset.userId;
 
-if (!conversationId) {
-  console.error("❌ No conversation ID returned");
-  return;
+        loadConversations();
+    } catch (error) {
+        console.error('Error creating conversation:', error);
+    }
 }
 
-// ✅ Emit only after getting valid conversationId
-socket.emit('private-message', {
-  senderId: currentUser.id,
-  receiverId: userId,
-  content: message,
-  conversationId
-});
-
-            newChatModal.classList.remove('show');
-            searchUserInput.value = '';
-            initialMessage.value = '';
-            delete confirmNewChat.dataset.userId;
-
-            loadConversations();
-        } catch (error) {
-            console.error('Error creating conversation:', error);
-        }
+  function sendZoomLink() {
+    if (!activeConversation) {
+        alert('Please select a conversation first');
+        return;
     }
+
+    const zoomLink = prompt('Enter Zoom meeting link:');
+    if (!zoomLink || !zoomLink.includes('zoom.us')) {
+        alert('Please enter a valid Zoom link');
+        return;
+    }
+
+    const receiverId = activeConversation.user1_id === currentUser.id
+        ? activeConversation.user2_id
+        : activeConversation.user1_id;
+
+    socket.emit('private-message', {
+        senderId: currentUser.id,
+        receiverId,
+        content: zoomLink,
+        conversationId: activeConversation.id
+    });
+
+    document.querySelector('.attachment-modal')?.remove();
+}
+async function scheduleMeeting() {
+    if (!activeConversation) {
+        alert('Please select a conversation first');
+        return;
+    }
+
+    const partnerId = activeConversation.user1_id === currentUser.id
+        ? activeConversation.user2_id
+        : activeConversation.user1_id;
+
+    try {
+        const response = await fetch(`/api/users/${partnerId}`);
+        const partner = await response.json();
+
+        const topic = prompt('Meeting Topic:', `Tutoring Session with ${partner.name}`);
+        const date = prompt('Date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+        const time = prompt('Time (HH:MM):', '15:00');
+        const duration = prompt('Duration (minutes):', '60');
+
+        if (!topic || !date || !time || !duration) return;
+
+        const start = new Date(`${date}T${time}:00`);
+        const end = new Date(start.getTime() + parseInt(duration) * 60000);
+
+        const formatForCalendar = (d) =>
+            d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+        const calendarUrl = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(topic)}&dates=${formatForCalendar(start)}/${formatForCalendar(end)}&details=${encodeURIComponent('Meeting for SwapSecure')}&location=${encodeURIComponent('https://zoom.us')}`;
+
+        // ✅ Open Google Calendar in a new tab
+        window.open(calendarUrl, '_blank');
+
+        // Optionally close modal
+        document.querySelector('.attachment-modal')?.remove();
+    } catch (error) {
+        console.error('Error scheduling meeting:', error);
+    }
+}
 
     // Attach Zoom/Meeting links
     function showAttachmentOptions() {
@@ -308,72 +375,13 @@ socket.emit('private-message', {
         `;
         document.body.appendChild(modal);
 
+         // ✅ Event Listeners
         document.getElementById('cancel-attachment').addEventListener('click', () => modal.remove());
-        document.getElementById('send-zoom-btn').addEventListener('click', sendZoomLink);
-        document.getElementById('schedule-meeting-btn').addEventListener('click', scheduleMeeting);
+    document.getElementById('send-zoom-btn').addEventListener('click', sendZoomLink);
+    document.getElementById('schedule-meeting-btn').addEventListener('click', scheduleMeeting);
     }
 
-    function sendZoomLink() {
-        const link = prompt('Enter Zoom meeting link:');
-        if (!link || !link.includes('zoom.us')) {
-            alert('Please enter a valid Zoom link');
-            return;
-        }
-
-        const receiverId = activeConversation.user1_id === currentUser.id ? activeConversation.user2_id : activeConversation.user1_id;
-
-        socket.emit('private-message', {
-            senderId: currentUser.id,
-            receiverId,
-            content: link,
-            conversationId: activeConversation.id
-        });
-
-        document.querySelector('.attachment-modal')?.remove();
-    }
-
-    async function scheduleMeeting() {
-        const partnerId = activeConversation.user1_id === currentUser.id ? activeConversation.user2_id : activeConversation.user1_id;
-
-        try {
-            const response = await fetch(`/api/users/${partnerId}`);
-            const partner = await response.json();
-
-            const topic = prompt('Meeting Topic:', `Tutoring Session with ${partner.name}`);
-            const date = prompt('Date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-            const time = prompt('Time (HH:MM):', '15:00');
-            const duration = prompt('Duration (minutes):', '60');
-
-            if (!topic || !date || !time || !duration) return;
-
-            const startTime = `${date}T${time}:00`;
-            let link = '';
-
-            if (currentUser.role === 'tutor') {
-                const zoomRes = await fetch('/api/zoom/meetings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: currentUser.id, startTime, topic, duration })
-                });
-                const zoomData = await zoomRes.json();
-                link = zoomData.join_url;
-            } else {
-                link = prompt('Enter meeting link:');
-                if (!link) return;
-            }
-
-            socket.emit('schedule-meeting', {
-                tutorId: currentUser.role === 'tutor' ? currentUser.id : partnerId,
-                studentId: currentUser.role === 'student' ? currentUser.id : partnerId,
-                meetingDetails: { startTime, duration: parseInt(duration), topic, link }
-            });
-
-            document.querySelector('.attachment-modal')?.remove();
-        } catch (error) {
-            console.error('Error scheduling meeting:', error);
-        }
-    }
-
+    
     function addMeetingToUI(meeting) {
         const element = document.createElement('div');
         element.className = 'meeting-notification';
@@ -403,13 +411,7 @@ socket.emit('private-message', {
         conversationId: activeConversation.id
     });
 
-    // Add to UI immediately
-    addMessageToUI({
-        sender_id: currentUser.id,
-        content,
-        timestamp: new Date().toISOString(),
-        conversationId: activeConversation.id
-    });
+    
 
     // Clear input
     messageInput.value = '';
@@ -419,13 +421,48 @@ socket.emit('private-message', {
     // Event Listeners
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    attachBtn.addEventListener('click', showAttachmentOptions);
     newChatBtn.addEventListener('click', () => newChatModal.classList.add('show'));
     closeNewChatModal.addEventListener('click', () => newChatModal.classList.remove('show'));
     cancelNewChat.addEventListener('click', () => newChatModal.classList.remove('show'));
     searchUserInput.addEventListener('input', searchUsers);
     confirmNewChat.addEventListener('click', createNewConversation);
     attachBtn.addEventListener('click', showAttachmentOptions);
+   
+    function connectSocket() {
+  if (!socket || !currentUser) return;
+
+  socket.emit('authenticate', currentUser.id);
+
+  socket.on('new-message', (message) => {
+    if (activeConversation && activeConversation.id === message.conversationId) {
+      addMessageToUI(message);
+    }
+    updateConversationList();
+  });
+
+  socket.on('user-status-changed', ({ userId, status }) => {
+    if (
+      activeConversation &&
+      (activeConversation.user1_id === userId || activeConversation.user2_id === userId)
+    ) {
+      updatePartnerStatus(status);
+    }
+    updateConversationList();
+  });
+
+  socket.on('new-meeting', (meeting) => {
+    if (
+      (activeConversation?.user1_id === meeting.tutorId || activeConversation?.user2_id === meeting.tutorId) &&
+      (activeConversation?.user1_id === meeting.studentId || activeConversation?.user2_id === meeting.studentId)
+    ) {
+      addMeetingToUI(meeting);
+    }
+  });
+}
+
 
     connectSocket();
     loadConversations();
+     })();
 });

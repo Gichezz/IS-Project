@@ -4,6 +4,7 @@ const db = require('../database');
 const Activity = require('./activity');
 
 function isAdmin(req, res, next) {
+    console.log("🔐 isAdmin check → session user:", req.session.user);
     if (req.session.user && req.session.user.role === 'admin') {
         return next();
     }
