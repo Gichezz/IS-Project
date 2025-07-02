@@ -8,6 +8,7 @@ const cors = require("cors");
 const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
+const userRoutes = require('./routes/userRoutes');
 
 const db = require("./database");
 
@@ -56,8 +57,8 @@ app.use(
 // Session verification middleware to protected routes
 app.use((req, res, next) => {
     // Paths that don't require authentication
-    const publicPaths = ['/login',  '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html','/register-student','/register-expert',
-  '/register-admin'];
+    const publicPaths = ['/login', '/session', '/login.html', '/register.html','/studentsignup.html', '/tutorsignup.html', 
+      '/register-student','/register-expert', '/forgot-password', '/forgotPassword.html', '/reset-password', '/resetPassword.html'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -97,6 +98,7 @@ app.use('/', authRoutes);
 app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
+app.use(userRoutes);
 
 
 
@@ -117,7 +119,7 @@ app.get('/check-session', (req, res) => {
 
 
 
-// ✅ Current User Session Route
+//  Current User Session Route
 app.get("/api/users/current", async (req, res) => {
   try {
     if (!req.session || !req.session.user) {
@@ -138,7 +140,7 @@ app.get("/api/users/current", async (req, res) => {
   }
 });
 
-// ✅ Get User by ID
+// Get User by ID
 app.get("/api/users/:userId", async (req, res) => {
   try {
     const [users] = await db.execute(
@@ -161,7 +163,7 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
-// ✅ Search Users
+// Search Users
 app.get("/api/users/search/:query", async (req, res) => {
   try {
     const [users] = await db.execute(
@@ -176,7 +178,7 @@ app.get("/api/users/search/:query", async (req, res) => {
   }
 });
 
-// ✅ Get Conversations
+// Get Conversations
 app.get("/api/conversations/:userId", async (req, res) => {
   try {
     const [conversations] = await db.execute(`
@@ -199,7 +201,7 @@ app.get("/api/conversations/:userId", async (req, res) => {
   }
 });
 
-// ✅ Get Messages
+// Get Messages
 app.get("/api/messages/:conversationId", async (req, res) => {
   try {
     const [messages] = await db.execute(`
@@ -223,7 +225,7 @@ app.post("/api/conversations/:id/read", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    console.log(`📖 Marking messages in conversation ${conversationId} as read for user ${userId}`);
+    console.log(` Marking messages in conversation ${conversationId} as read for user ${userId}`);
 
     // ✅ Update all messages not sent by the current user as read
     await db.execute(`
@@ -234,18 +236,18 @@ app.post("/api/conversations/:id/read", async (req, res) => {
 
     res.status(200).json({ message: 'Conversation marked as read' });
   } catch (error) {
-    console.error("❌ Error marking conversation as read:", error);
+    console.error(" Error marking conversation as read:", error);
     res.status(500).json({ error: 'Failed to mark as read' });
   }
 });
 
-// ✅ Create or Get Conversation
+// Create or Get Conversation
 app.post("/api/conversations", async (req, res) => {
   const { user1Id, user2Id } = req.body;
 
-  console.log("📥 Conversation request received:");
-  console.log("🔹 user1Id:", user1Id);
-  console.log("🔹 user2Id:", user2Id);
+  console.log(" Conversation request received:");
+  console.log(" user1Id:", user1Id);
+  console.log(" user2Id:", user2Id);
 
   try {
     // Check if conversation already exists
@@ -255,13 +257,13 @@ app.post("/api/conversations", async (req, res) => {
     `, [user1Id, user2Id, user2Id, user1Id]);
 
     if (existing.length > 0) {
-      console.log("✅ Conversation already exists:", existing[0].id);
+      console.log("Conversation already exists:", existing[0].id);
       return res.json({ conversationId: existing[0].id });
     }
 
     // Generate UUID for new conversation
     const conversationId = uuidv4();
-    console.log("🆕 Creating new conversation with ID:", conversationId);
+    console.log(" Creating new conversation with ID:", conversationId);
 
     // Insert new conversation
     await db.execute(
@@ -269,11 +271,11 @@ app.post("/api/conversations", async (req, res) => {
       [conversationId, user1Id, user2Id]
     );
 
-    console.log("✅ New conversation created successfully");
+    console.log(" New conversation created successfully");
 
     res.json({ conversationId });
   } catch (error) {
-    console.error("❌ Error creating conversation:", error);
+    console.error(" Error creating conversation:", error);
     res.status(500).json({ error: "Failed to create conversation" });
   }
 });

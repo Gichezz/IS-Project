@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeConversation = null;
     
 
+<<<<<<< HEAD
 
 
     // Fetch user from server session
@@ -38,6 +39,28 @@ document.addEventListener('DOMContentLoaded', function() {
             alert("Please log in to continue.");
             window.location.href = "/login.html";
             return null;
+=======
+    // Session check
+    async function checkSessionAndStart() {
+        try {
+            const res = await fetch('/session', { credentials: 'include' });
+            const sessionData = await res.json();
+
+            if (!sessionData.loggedIn || !sessionData.user) {
+                alert("Please log in to continue.");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            currentUser = sessionData.user;
+
+            connectSocket();
+            loadConversations();
+        } catch (err) {
+            console.error("Session check error:", err);
+            alert("Session error. Please log in again.");
+            window.location.href = "/login.html";
+>>>>>>> d21872c081e798cb9b8e95553dfcdb8a35499ed6
         }
     }
     
@@ -61,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
     }
 
+    // Load conversations
     async function loadConversations() {
         try {
             const response = await fetch(`/api/conversations/${currentUser.id}`);
@@ -80,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     conversations.forEach(conv => {
-        console.log("🔍 Loaded conversation:", conv); // ✅ Add this
+        console.log(" Loaded conversation:", conv); 
 
         const partner = conv.user1_id === currentUser.id ?
             { id: conv.user2_id, name: conv.user2_name, role: conv.user2_role } :
@@ -101,11 +125,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="conversation-time">${formatTime(conv.last_message_time)}</div>
         `;
 
-        // ✅ Defensive check
+        // Defensive check
         if (conv.id) {
             conversationItem.addEventListener('click', () => loadConversation(conv.id, partner));
         } else {
-            console.error("⚠️ Missing conversation ID:", conv);
+            console.error(" Missing conversation ID:", conv);
         }
 
         conversationList.appendChild(conversationItem);
@@ -115,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function loadConversation(conversationId, partner) {
     if (!conversationId) {
-        console.error("⚠️ loadConversation called with invalid conversationId:", conversationId);
+        console.error(" loadConversation called with invalid conversationId:", conversationId);
         return;
     }
 
@@ -428,6 +452,7 @@ async function scheduleMeeting() {
     searchUserInput.addEventListener('input', searchUsers);
     confirmNewChat.addEventListener('click', createNewConversation);
     attachBtn.addEventListener('click', showAttachmentOptions);
+<<<<<<< HEAD
    
     function connectSocket() {
   if (!socket || !currentUser) return;
@@ -465,4 +490,9 @@ async function scheduleMeeting() {
     connectSocket();
     loadConversations();
      })();
+=======
+    
+    // Initialize
+    checkSessionAndStart();
+>>>>>>> d21872c081e798cb9b8e95553dfcdb8a35499ed6
 });

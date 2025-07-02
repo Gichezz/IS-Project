@@ -67,4 +67,78 @@ router.get('/session', (req, res) => {
     }
 });
 
+// Load sessions on student profile
+router.get('/api/sessions', async (req, res) => {
+  const { studentId } = req.query;
+
+  if (!studentId) {
+    return res.status(400).json({ error: 'Missing studentId' });
+  }
+
+  try {
+    const [sessions] = await db.execute(
+      `SELECT 
+        sr.id, sr.skill_requested AS skill, sr.expert_id AS expertId,
+        u.name AS expertName, sr.status, sr.requested_time AS scheduledTime,
+        sr.student_completed
+       FROM session_requests sr
+       JOIN users u ON sr.expert_id = u.id
+       WHERE sr.student_id = ?`,
+      [studentId]
+    );
+
+    res.json(sessions);
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Mark session as completed by student
+router.put('/session-requests/:id/student-complete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const studentId = req.session.user.id;
+
+    // Verify the session belongs to this student
+    const [session] = await executeQuery(
+      'SELECT student_id FROM session_requests WHERE id = ?',
+      [id]
+    );
+
+    if (!session || session.student_id !== studentId) {
+      return res.status(404).json({ error: 'Session not found or not authorized' });
+    }
+
+    // Update student_completed flag
+    await db.execute(
+      'UPDATE session_requests SET student_completed = TRUE WHERE id = ?',
+      [id]
+    );
+
+    // Check if both parties have completed
+    const [sessionStatus] = await executeQuery(
+      'SELECT student_completed, expert_completed FROM session_requests WHERE id = ?',
+      [id]
+    );
+
+    const bothCompleted = sessionStatus.student_completed && sessionStatus.expert_completed;
+
+    if (bothCompleted) {
+      await db.execute(
+        'UPDATE session_requests SET status = "COMPLETED" WHERE id = ?',
+        [id]
+      );
+    }
+
+    res.json({ success: true, status: bothCompleted ? 'COMPLETED' : 'IN_PROGRESS' });
+
+  } catch (error) {
+    console.error('Error completing session by student:', error);
+    res.status(500).json({ error: 'Failed to complete session' });
+  }
+});
+
+
+
 module.exports = router;

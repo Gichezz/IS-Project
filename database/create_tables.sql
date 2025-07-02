@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
     description TEXT,        -- For experts only
     files TEXT,              -- For experts only
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    approved TINYINT(1) DEFAULT 0 -- 0 = not approved, 1 = approved
+    approved TINYINT(1) DEFAULT 0, -- 0 = not approved, 1 = approved
+    reset_token VARCHAR(255),
+    reset_token_expires DATETIME
 );
 -- Payment Table
 CREATE TABLE IF NOT EXISTS mpesa_payments (
@@ -41,7 +43,7 @@ CREATE TABLE session_requests (
     FOREIGN KEY (skill_id) REFERENCES skills(id)
 );
 
-
+-- Activity table
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(36),

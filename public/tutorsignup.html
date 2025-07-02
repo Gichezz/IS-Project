@@ -19,26 +19,26 @@
         <form id="signupForm" method="POST" action="/register-expert" enctype="multipart/form-data">
             <div class="form">
                 <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required placeholder="Full Name">
+                <input type="text" id="name" name="name" required placeholder="Enter your full name">
 
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" required placeholder="expert@strathmore.edu">
+                <input type="email" id="email" name="email" required placeholder="Enter your strathmore email e.g. expert@strathmore.edu">
 
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="••••••••">
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
 
                 <label>Skills You Offer</label>
                 <div style="position: relative;">
                     <select id="skills" class="skills-dropdown">
                         <option value="">Select a skill</option>
-                        <option value="web-dev">Web App</option>
-                        <option value="baking">Baking</option>
-                        <option value="painting">Painting</option>
-                        <option value="robotics">Robotics</option>
-                        <option value="music">Music</option>
-                        <option value="Ai">Ai</option>
-                        <option value="drawing">Drawing</option>
-                        <option value="crocheting">Crocheting</option>
+                        <option value="Web Development">Web App</option>
+                        <option value="Baking">Baking</option>
+                        <option value="Painting">Painting</option>
+                        <option value="Robotics">Robotics</option>
+                        <option value="Music">Music</option>
+                        <option value="AI">AI</option>
+                        <option value="Drawing">Drawing</option>
+                        <option value="Crocheting">Crocheting</option>
                     </select>
                     <div class="skill-tags-container" id="skillTagsContainer"></div>
                     <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
