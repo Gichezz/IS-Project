@@ -84,3 +84,42 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE userconnect (
+  user_id VARCHAR(36) PRIMARY KEY,
+  online_status ENUM('online', 'offline') DEFAULT 'offline',
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversations (
+  id VARCHAR(36) PRIMARY KEY,
+  user1_id VARCHAR(36) NOT NULL,
+  user2_id VARCHAR(36) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_conversation (user1_id, user2_id)
+);
+CREATE TABLE messages (
+  id VARCHAR(36) PRIMARY KEY,
+  conversation_id VARCHAR(36) NOT NULL,
+  sender_id VARCHAR(36) NOT NULL,
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE meetings (
+  id VARCHAR(36) PRIMARY KEY,
+  tutor_id VARCHAR(36) NOT NULL,
+  student_id VARCHAR(36) NOT NULL,
+  meeting_time DATETIME NOT NULL,
+  duration INT NOT NULL,
+  meeting_link VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (tutor_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
