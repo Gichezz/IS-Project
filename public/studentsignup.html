@@ -33,14 +33,14 @@
                 <div style="position: relative;">
                 <select id="skills" class="skills-dropdown">
                     <option value="">Select a skill</option>
-                        <option value="Web Development">Web App</option>
-                        <option value="Baking">Baking</option>
-                        <option value="Painting">Painting</option>
-                        <option value="Robotics">Robotics</option>
-                        <option value="Music">Music</option>
-                        <option value="AI">AI</option>
-                        <option value="Drawing">Drawing</option>
-                        <option value="Crocheting">Crocheting</option>
+                        <option value="web-dev">Web App</option>
+                        <option value="baking">Baking</option>
+                        <option value="painting">Painting</option>
+                        <option value="robotics">Robotics</option>
+                        <option value="music">Music</option>
+                        <option value="Ai">Ai</option>
+                        <option value="drawing">Drawing</option>
+                        <option value="crocheting">Crocheting</option>
                 </select>
                 <div class="skill-tags-container" id="skillTagsContainer"></div>
                     <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
@@ -78,6 +78,12 @@
                 return;
             }
 
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                showToast("Password must be at least 8 characters, include a capital letter, a number, and a symbol.", true);
+                return;
+            }
+
             if (!selectedSkills) {
                 showToast("Please select at least one skill.", true);
                 return;
@@ -98,7 +104,7 @@
                 });
 
                 if (response.redirected) {
-                    showToast("Account created successfully!");
+                    showToast("Registration successful! Please check your email to verify your account.");
                     setTimeout(() => {
                         window.location.href = response.url;
                     }, 1500);

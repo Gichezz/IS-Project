@@ -31,14 +31,14 @@
                 <div style="position: relative;">
                     <select id="skills" class="skills-dropdown">
                         <option value="">Select a skill</option>
-                        <option value="Web Development">Web App</option>
-                        <option value="Baking">Baking</option>
-                        <option value="Painting">Painting</option>
-                        <option value="Robotics">Robotics</option>
-                        <option value="Music">Music</option>
-                        <option value="AI">AI</option>
-                        <option value="Drawing">Drawing</option>
-                        <option value="Crocheting">Crocheting</option>
+                        <option value="web-dev">Web App</option>
+                        <option value="baking">Baking</option>
+                        <option value="painting">Painting</option>
+                        <option value="robotics">Robotics</option>
+                        <option value="music">Music</option>
+                        <option value="Ai">AI</option>
+                        <option value="drawing">Drawing</option>
+                        <option value="crocheting">Crocheting</option>
                     </select>
                     <div class="skill-tags-container" id="skillTagsContainer"></div>
                     <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
@@ -82,6 +82,7 @@
             const fileInput = document.getElementById("file");
 
             const emailRegex = /^[^\s@]+@strathmore\.edu$/;
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
             // Validate fields
             if (!name || !email || !password || !description) {
@@ -91,6 +92,11 @@
 
             if (!emailRegex.test(email)) {
                 showToast("Use your Strathmore University email (@strathmore.edu).", true);
+                return;
+            }
+
+            if (!passwordRegex.test(password)) {
+                showToast("Password must be at least 8 characters, include a capital letter, a number, and a symbol.", true);
                 return;
             }
 
@@ -113,7 +119,7 @@
                 });
 
                 if (response.redirected) {
-                    showToast("Account created successfully!");
+                    showToast("Registration successful! Please check your email to verify your account.");
                     setTimeout(() => {
                         window.location.href = response.url;
                     }, 1500);

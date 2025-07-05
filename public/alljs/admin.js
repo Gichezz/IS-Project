@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             document.getElementById('pending-count').textContent = data.pendingExperts || 0;
             document.getElementById('experts-count').textContent = data.totalExperts || 0;
+            document.getElementById('users-count').textContent = data.allUsers || 0;
+            document.getElementById('total-revenue').textContent = data.totalRevenue || 0;
             
             if (data.recentActivities) {
                 renderRecentActivities(data.recentActivities);

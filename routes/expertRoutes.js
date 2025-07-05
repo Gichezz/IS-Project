@@ -149,7 +149,11 @@ router.put('/session-requests/:id/complete', async (req, res) => {
     
     let paymentProcessed = false;
     if (sessionStatus.student_completed && sessionStatus.expert_completed) {
-      // Process payment (would connect to your payment system)
+      await db.execute(
+        'UPDATE session_requests SET status = "COMPLETED" WHERE id = ?',
+        [id]
+      );
+      // Process payment
       paymentProcessed = true;
     }
     

@@ -192,6 +192,7 @@ nav {
 
 #signup-btn {
   margin-top: 40px;
+  display: none;
 }
 
 #signup-btn a {

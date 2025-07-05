@@ -33,9 +33,11 @@
         document.getElementById("adminSignupForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             
+            try {
             const response = await fetch("/register-admin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: 'include',
                 body: JSON.stringify({
                     name: document.getElementById("name").value,
                     email: document.getElementById("email").value,
@@ -49,6 +51,10 @@
                 window.location.href = "/login.html"; 
             } else {
                 alert(await response.text());
+            }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred. Please try again.");
             }
         });
     </script>

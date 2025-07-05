@@ -44,7 +44,12 @@ router.post('/register-student', async (req, res) => {
         console.log("Registering student...");
         // Insert user
         await db.execute(sql, [name, email, hashedPassword, selectedSkills]);
+        const verificationToken = crypto.randomBytes(32).toString('hex');
 
+        await db.execute(
+            'UPDATE users SET verification_token = ? WHERE email = ?',
+            [verificationToken, email]
+          );
         // Retrieve inserted UUID
         const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
         const insertedId = rows[0]?.id;
@@ -59,6 +64,16 @@ router.post('/register-student', async (req, res) => {
         } catch (activityErr) {
             console.error('Activity log failed:', activityErr);
         }
+
+        const BASE_URL = process.env.BASE_URL || 'http://localhost:3010';
+        // Send verification email
+        const verificationLink = `${BASE_URL}/verify-email?token=${verificationToken}`;
+        await sendEmail(
+            email,
+            'Verify your SkillSwap email',
+            `Hello ${name}, please verify your email by clicking the following link: ${verificationLink}`,
+            `<h2>Hello ${name},</h2><p>Thank you for registering on <strong>SkillSwap</strong>.</p><p>Please verify your email by clicking the link below:</p><a href='${verificationLink}'>Verify Email</a><p>If you did not register, please ignore this email.</p>`
+        );
 
         return res.redirect('/login.html');
     } catch (err) {
@@ -117,19 +132,33 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 description: `${name} (${email}) registered as expert`
             })
             .then( async () => {
+                // Generate verification token
+                const verificationToken = crypto.randomBytes(32).toString('hex');
+                await db.execute(
+                    'UPDATE users SET verification_token = ? WHERE email = ?',
+                    [verificationToken, email]
+                );
+                const BASE_URL = process.env.BASE_URL || 'http://localhost:3010';
+                // Send verification email
+                const verificationLink = `${BASE_URL}/verify-email?token=${verificationToken}`;
                 await sendEmail(
                     email,
-                    'Welcome to SkillSwap!',
-                    `Hello ${name}, thank you for registering as an expert on SkillSwap. Your account is under review.`,
-                    `
-                        <h2>Hello ${name},</h2>
-                        <p>Thank you for registering as an <strong>expert</strong> on <span style="color:#2ecc71;">SkillSwap</span>.</p>
-                        <p>Your account is under review. We'll notify you once approved.</p>
-                        <br/>
-                        <p>Best,<br/>SkillSwap</p>
-                    `
+                    'Verify your SkillSwap expert email',
+                    `Hello ${name},\n\nThank you for registering as an expert on SkillSwap.\n\nPlease verify your email by clicking the following link:\n${verificationLink}\n\nAfter verifying your email, your account will be reviewed by our admin team. You will be notified once your account is approved and you can then log in.\n\nIf you did not register, please ignore this email.\n\nBest,\nSkillSwap Team`,
+                    `<h2>Hello ${name},</h2>
+                    <p>Thank you for registering as an <strong>expert</strong> on <strong>SkillSwap</strong>.</p>
+                    <p>
+                        <strong>Step 1:</strong> Please verify your email by clicking the link below:<br>
+                        <a href='${verificationLink}'>Verify Email</a>
+                    </p>
+                    <p>
+                        <strong>Step 2:</strong> After verifying your email, your account will be reviewed for approval.<br>
+                        You will be notified once your account is approved and you can then log in.
+                    </p>
+                    <p>If you did not register, please ignore this email.</p>
+                    <p>Best,<br/>SkillSwap Team</p>`
                 );
-                 res.redirect('/login.html')
+                res.redirect('/login.html')
             })
             .catch(err => {
                 console.error('Error creating activity:', err);
@@ -141,6 +170,51 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
     }
 });
 
+// VERIFY EMAIL
+router.get('/verify-email', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).send('Invalid token');
+    const [rows] = await db.execute('SELECT * FROM users WHERE verification_token = ?', [token]);
+    if (rows.length === 0) return res.status(400).send('Invalid or expired token');
+    await db.execute('UPDATE users SET email_verified = TRUE, verification_token = NULL WHERE id = ?', [rows[0].id]);
+    res.send('Email verified! You can now log in.');
+});
+
+// RESEND VERIFICATION EMAIL
+router.post('/resend-verification', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required.' });
+
+    // Find user
+    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0) {
+        return res.status(404).json({ message: 'No account found with that email.' });
+    }
+    const user = rows[0];
+    if (user.email_verified) {
+        return res.status(400).json({ message: 'Email is already verified.' });
+    }
+
+    // Generate new token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await db.execute(
+        'UPDATE users SET verification_token = ? WHERE email = ?',
+        [verificationToken, email]
+    );
+
+    const BASE_URL = process.env.BASE_URL || 'http://localhost:3010';
+
+    // Send email
+    const verificationLink = `${BASE_URL}/verify-email?token=${verificationToken}`;
+    await sendEmail(
+        email,
+        'Resend: Verify your SkillSwap email',
+        `Hello ${user.name}, please verify your email by clicking the following link: ${verificationLink}`,
+        `<h2>Hello ${user.name},</h2><p>Please verify your email by clicking the link below:</p><a href='${verificationLink}'>Verify Email</a><p>If you did not register, please ignore this email.</p>`
+    );
+
+    res.json({ message: 'Verification email resent. Please check your inbox.' });
+});
 
 // ADMIN REGISTRATION
 router.post('/register-admin', async (req, res) => {
@@ -171,17 +245,34 @@ router.post('/register-admin', async (req, res) => {
         // 4. Create admin
         const hashedPassword = await bcrypt.hash(password, 10); // hash first
         const [result] = await db.execute(
-            `INSERT INTO users (id, name, email, password, role, approved, skills)
-            VALUES (UUID(), ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO users (id, name, email, password, role, approved, skills, email_verified)
+            VALUES (UUID(), ?, ?, ?, ?, ?, ?, 0)`,
             [name, email, hashedPassword, 'admin', 1, 'admin']
         );
 
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await db.execute(
+            'UPDATE users SET verification_token = ? WHERE email = ?',
+            [verificationToken, email]
+        );
+
+        const BASE_URL = process.env.BASE_URL || 'http://localhost:3010';
+        // Send verification email
+        const verificationLink = `${BASE_URL}/verify-email?token=${verificationToken}`;
+        await sendEmail(
+            email,
+            'Verify your SkillSwap admin email',
+            `Hello ${name}, please verify your admin email by clicking the following link: ${verificationLink}`,
+            `<h2>Hello ${name},</h2><p>Thank you for registering as an <strong>admin</strong> on <strong>SkillSwap</strong>.</p><p>Please verify your email by clicking the link below:</p><a href='${verificationLink}'>Verify Email</a><p>If you did not register, please ignore this email.</p>`
+        );
+
         // Retrieve UUID from DB
-        const [[user]] = await db.execute(
+        const [rows] = await db.execute(
         `SELECT id FROM users WHERE email = ? AND role = 'admin'`,
         [email]
         );
-
+        const user = rows[0];
         // Use correct UUID for activity
         try{
             await Activity.create({
@@ -281,66 +372,6 @@ router.get('/admin/users', ensureAuthenticated, async (req, res) => {
 }); */
 
 
-
-// GET: Return Expert Info for Display Cards
-router.get('/expert-cards', async (req, res) => {
-  try {
-    const sql = `
-      SELECT 
-        u.id AS expert_id,
-        u.name,
-        u.description,
-        s.id AS skill_id, 
-        s.skill_name,
-        s.hourly_rate,
-        s.status
-      FROM users u
-      JOIN skills s ON u.id = s.expert_id
-      WHERE u.role = 'expert' AND u.approved = 1 AND s.status = 'Approved'
-    `;
-
-    const [rows] = await db.execute(sql);
-
-    // Group skills by expert
-    const expertMap = new Map();
-
-    for (const row of rows) {
-      const id = row.expert_id;
-
-      if (!expertMap.has(id)) {
-        expertMap.set(id, {
-          id,
-          name: row.name,
-          description: row.description,
-          skillDataAttr: [],
-          time: "Flexible",
-          price: 1,
-          image: "/images/0684456b-aa2b-4631-86f7-93ceaf33303c.jpg"
-        });
-      }
-
-      expertMap.get(id).skillDataAttr.push({
-        skill_id: row.skill_id,
-        skill_name: row.skill_name,
-    });
-    }
-
-    // Final formatting
-    const formatted = Array.from(expertMap.values()).map(expert => ({
-      ...expert,
-      skillDataAttr: JSON.stringify(expert.skillDataAttr) // Send as JSON string
-    }));
-
-    res.json(formatted);
-
-  } catch (err) {
-    console.error('Error fetching expert cards:', err);
-    res.status(500).json({ error: 'Failed to load expert cards' });
-  }
-});
-
-
-
 // LOGIN
 router.post('/login', async (req, res) => {
     try {
@@ -370,6 +401,9 @@ router.post('/login', async (req, res) => {
                 console.error('Failed to log blocked login activity:', activityErr);
             }
             return res.status(403).json({ success: false, message: 'Your account is pending approval.' });
+        }
+        if (!user.email_verified) {
+            return res.status(403).json({ success: false, message: 'Please verify your email before logging in.' });
         }
 
         // Save login session
