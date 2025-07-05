@@ -22,7 +22,7 @@
                 
                 
                 <label for="password">Password</label>
-                <input type="password" id="loginPassword" name="password" required placeholder="••••••••">
+                <input type="password" id="loginPassword" name="password" required placeholder="••••••••" autocomplete="current-password">
                 
                 
                 <div class="form-options">
@@ -58,6 +58,7 @@
             try {
                 const response = await fetch("/login", {
                     method: "POST",
+                    credentials: "include",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password })
                 });

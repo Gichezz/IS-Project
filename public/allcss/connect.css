@@ -572,6 +572,12 @@ body {
     color: #4caf50;
 }
 
+.message-status.read {
+  color: #00b894;
+}
+
+
+
 .offline {
     color:#cccccc;
 }

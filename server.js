@@ -21,7 +21,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "*",
+    origin: "http://127.0.0.1:3010",
+    credentials: true,
     methods: ["GET", "POST"]
   }
 });
@@ -36,7 +37,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Middleware to parse JSON and URL-encoded data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors());
+
+// ✅ CORS Setup (BEFORE session)
+app.use(cors({
+  origin: 'http://127.0.0.1:3010', // Set exact origin
+  credentials: true
+}));
 
 //Session setup
 app.use(
@@ -53,8 +59,9 @@ app.use(
 // Session verification middleware to protected routes
 app.use((req, res, next) => {
     // Paths that don't require authentication
-    const publicPaths = ['/login', '/register-expert', '/register-student', '/register-admin', '/session', '/login.html', '/tutorsignup.html', '/studentsignup.html', 
-       '/forgot-password', '/forgotPassword.html', '/reset-password', '/resetPassword.html', '/verify-email'];
+    const publicPaths = ['/login', '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html', 
+      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html', 
+      '/reset-password', '/resetPassword.html', '/verify-email'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -225,8 +232,8 @@ app.post("/api/conversations/:id/read", async (req, res) => {
   try {
     console.log(` Marking messages in conversation ${conversationId} as read for user ${userId}`);
 
-    //  Update all messages not sent by the current user as read
-    await db.promise().query(`
+    // ✅ Update all messages not sent by the current user as read
+    await db.execute(`
       UPDATE messages 
       SET is_read = TRUE 
       WHERE conversation_id = ? AND sender_id != ?
@@ -291,18 +298,22 @@ io.on("connection", (socket) => {
 
   socket.on("private-message", async ({ senderId, receiverId, content, conversationId }) => {
     try {
-      const [result] = await db.execute(
-        "INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)",
-        [conversationId, senderId, content]
-      );
+      const messageId = uuidv4(); // 👈 Generate unique message ID
+const [result] = await db.execute(
+  "INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?, ?)",
+  [messageId, conversationId, senderId, content]
+);
+
+
+      
 
       const message = {
-        id: result.insertId,
-        senderId,
-        content,
-        timestamp: new Date(),
-        conversationId
-      };
+  id: messageId, // 👈 Use the UUID here
+  senderId,
+  content,
+  timestamp: new Date(),
+  conversationId
+};
 
       if (onlineUsers.has(receiverId)) {
         io.to(onlineUsers.get(receiverId)).emit("new-message", message);

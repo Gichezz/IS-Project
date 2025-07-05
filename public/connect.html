@@ -136,33 +136,6 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const res = await fetch('/session', { credentials: 'include' });
-                const data = await res.json();
-
-                if (!data.loggedIn || !data.user) {
-                    alert("Please log in to start a conversation.");
-                    window.location.href = "/login.html";
-                    return;
-                }
-
-                const currentUser = data.user;
-
-                // Display current user name
-                document.getElementById('current-user').textContent = currentUser.name;
-
-                // Set a default title for chat
-                document.getElementById('chat-partner-name').textContent = "Chat Interface";
-
-            } catch (err) {
-                console.error("Session fetch failed:", err);
-                alert("Session error. Please log in.");
-                window.location.href = "/login.html";
-            }
-        });
-    </script>
 
 
 

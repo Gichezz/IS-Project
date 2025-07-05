@@ -379,22 +379,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Skill approval/rejection
         if (e.target.classList.contains('approve-skill-btn')) {
-            if (confirm('Approve this skill?')) {
-                const button = e.target.closest('.approve-skill-btn');
-                const id = button.getAttribute('data-id');
-                await updateSkillStatus(id, 'Approved');
+    if (confirm('Approve this skill?')) {
+        const id = e.target.getAttribute('data-id');
+        await updateSkillStatus(id, 'Approved');
             }
         }
         
         if (e.target.classList.contains('reject-skill-btn')) {
-            const reason = prompt('Enter rejection reason (required):')
-            if (reason) {
-                const button = e.target.closest('.reject-skill-btn');
-                const id = button.getAttribute('data-id');
-                await updateSkillStatus(id, 'Rejected');
-            } else {
-                alert('Rejection reason is required.');
-            }
+    const reason = prompt('Enter rejection reason (required):');
+    if (reason) {
+        const id = e.target.getAttribute('data-id');
+        await updateSkillStatus(id, 'Rejected', reason);
+    } else {
+        alert('Rejection reason is required.');
+    }
         }
     });
     

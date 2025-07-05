@@ -4,6 +4,8 @@ const db = require('../database');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -236,15 +238,18 @@ router.post('/skills', upload.array('proof_files', 5), async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
     
-    const result = await executeQuery(
-      'INSERT INTO skills (expert_id, skill_name, hourly_rate, description, proof_files, status) VALUES (?, ?, ?, ?, ?, "Pending")',
-      [expertId, skill_name, hourly_rate, description, proofFiles.join(',')]
-    );
+     const skillId = uuidv4();
+
+ const result = await executeQuery(
+  'INSERT INTO skills (id, expert_id, skill_name, hourly_rate, description, proof_files, status) VALUES (?, ?, ?, ?, ?, ?, "Pending")',
+   [skillId, expertId, skill_name, hourly_rate, description, proofFiles.join(',')]
+);
+
 
     if (result.affectedRows === 1) {
         return res.json({
             success: true,
-            skill_id: result.insertId || 0, // Handle cases where insertId might be 0
+            skill_id: skillId,
             message: 'Skill added successfully'
         });
     } else {

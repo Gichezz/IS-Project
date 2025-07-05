@@ -20,9 +20,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-// STUDENT REGISTRATION 
+
+
+
+
+// STUDENT REGISTRATION  
 router.post('/register-student', async (req, res) => {
     const { name, email, password, selectedSkills } = req.body;
+    console.log("📥 Student Registration Request:", { name, email, password, selectedSkills });
 
     if (!name || !email || !password || !selectedSkills) {
         return res.status(400).send('Please fill in all required fields.');
@@ -35,11 +40,12 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("🔐 Hashed Password:", hashedPassword);
 
         const sql = `
-            INSERT INTO users (id, name, email, password, role, skills)
-            VALUES (UUID(), ?, ?, ?, 'student', ?)
-        `;
+    INSERT INTO users (id, name, email, password, role, skills)
+    VALUES (UUID(), ?, ?, ?, 'student', ?)
+`;
 
         console.log("Registering student...");
         // Insert user
@@ -92,6 +98,8 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
     const { name, email, password, selectedSkills, description } = req.body;
     const files = req.files;
 
+    console.log("📥 Expert Registration Request:", { name, email, password, selectedSkills, description, files });
+
     if (!name || !email || !password || !description || !selectedSkills) {
         return res.status(400).send("Please fill in all required fields.");
     }
@@ -109,18 +117,16 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const fileNames = files.map(f => f.filename).join(',');
 
+        console.log("🔐 Hashed Password:", hashedPassword);
+        console.log("📎 Uploaded Files:", fileNames);
+
         const sql = `
             INSERT INTO users (id, name, email, password, role, skills, description, files)
             VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
         `;
 
-        db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames], async (err, result) => {
-            if (err) {
-                if (err.code === 'ER_DUP_ENTRY') {
-                    return res.status(400).send('Email already in use.');
-                }
-                return res.status(500).send('Database error: ' + err.message);
-            }
+        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames]);
+        console.log("✅ Expert Insert Result:", result);
 
             // Fetch UUID of newly registered expert
             const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
@@ -164,9 +170,14 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 console.error('Error creating activity:', err);
                 res.redirect('/login.html');
             });
-        });
-    } catch (err) {
-        res.status(500).send("Server error: " + err.message);
+        
+    }
+     catch (err) {
+        console.error("❌ Expert Registration Error:", err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).send('Email already in use.');
+        }
+        return res.status(500).send('Database error: ' + err.message);
     }
 });
 
@@ -219,6 +230,7 @@ router.post('/resend-verification', async (req, res) => {
 // ADMIN REGISTRATION
 router.post('/register-admin', async (req, res) => {
     const { name, email, password, adminKey } = req.body;
+    console.log("📥 Admin Registration Request:", { name, email, password, adminKey });
 
     // 1. Validate secret key
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
@@ -244,6 +256,8 @@ router.post('/register-admin', async (req, res) => {
 
         // 4. Create admin
         const hashedPassword = await bcrypt.hash(password, 10); // hash first
+        console.log("🔐 Hashed Password (admin):", hashedPassword);
+
         const [result] = await db.execute(
             `INSERT INTO users (id, name, email, password, role, approved, skills, email_verified)
             VALUES (UUID(), ?, ?, ?, ?, ?, ?, 0)`,
@@ -276,7 +290,7 @@ router.post('/register-admin', async (req, res) => {
         // Use correct UUID for activity
         try{
             await Activity.create({
-            userId: user.id,
+                userId: user[0].id,
             type: 'New Registration',
             description: `${name} (${email}) registered as admin`
         });
@@ -552,5 +566,14 @@ function ensureAuthenticated(req, res, next) {
 router.get('/profile', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/profile.html'));
 });
+// GET: Current Logged-in User
+router.get('/current', (req, res) => {
+  if (req.session.user) {
+    res.json(req.session.user);
+  } else {
+    res.status(401).json({ message: 'Not logged in' });
+  }
+});
+
 
 module.exports = router;
