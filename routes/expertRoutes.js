@@ -299,40 +299,24 @@ router.put('/skills/:id', async (req, res) => {
   }
 });
 
-// Delete skill
+// Soft delete skill
 router.delete('/skills/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const expertId = req.session.user.id;
-    
+
     // Verify the skill belongs to this expert
     const [skill] = await executeQuery(
-      'SELECT proof_files FROM skills WHERE id = ? AND expert_id = ?',
+      'SELECT * FROM skills WHERE id = ? AND expert_id = ?',
       [id, expertId]
     );
-    
-    if (!skill || skill.length === 0) {
+
+    if (!skill) {
       return res.status(404).json({ error: 'Skill not found or not authorized' });
     }
-    
-    // Check if there are any sessions with this skill
-    const [sessions] = await executeQuery(
-      'SELECT COUNT(*) AS count FROM session_requests WHERE skill_id = ?',
-      [id]
-    );
-    
-    if (sessions.count > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete skill with active or past sessions' 
-      });
-    }
-    // Delete the skill record
-    await executeQuery('DELETE FROM skills WHERE id = ?', [id]);
 
-    // Delete associated files
-    if (skill[0].proof_files) {
-        await deleteSkillFiles(skill[0].proof_files);
-    }
+    // Set status to Deleted
+    await executeQuery('UPDATE skills SET status = "Deleted" WHERE id = ?', [id]);
 
     res.json({ success: true, message: 'Skill deleted successfully' });
   } catch (error) {
@@ -353,6 +337,28 @@ router.get('/skills/pending', async (req, res) => {
   } catch (error) {
     console.error('Error fetching pending skills:', error);
     res.status(500).json({ error: 'Failed to fetch pending skills' });
+  }
+});
+
+// Get a single skill by ID
+router.get('/skills/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const expertId = req.session.user.id;
+
+    const [skill] = await executeQuery(
+      'SELECT * FROM skills WHERE id = ? AND expert_id = ?',
+      [id, expertId]
+    );
+
+    if (!skill) {
+      return res.status(404).json({ error: 'Skill not found' });
+    }
+
+    res.json(skill);
+  } catch (error) {
+    console.error('Error fetching skill:', error);
+    res.status(500).json({ error: 'Failed to fetch skill' });
   }
 });
 

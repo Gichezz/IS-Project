@@ -38,7 +38,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ CORS Setup (BEFORE session)
+// CORS Setup (BEFORE session)
 app.use(cors({
   origin: 'http://127.0.0.1:3010', // Set exact origin
   credentials: true
@@ -88,6 +88,7 @@ app.use((err, req, res, next) => {
 
 const adminRoutes = require('./routes/adminRoutes');
 const expertRoutes = require('./routes/expertRoutes');
+const autoApprovalRoutes = require('./routes/autoApproval');
 
 
 
@@ -101,6 +102,7 @@ app.use('/', authRoutes);
 app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
+app.use('/api/auto-approval', autoApprovalRoutes);
 app.use(userRoutes);
 app.use('/api/skills', skillsRoutes);
 app.use('/api/experts', expertsRoutes);

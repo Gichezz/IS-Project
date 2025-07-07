@@ -27,7 +27,7 @@ const upload = multer({ storage });
 // STUDENT REGISTRATION  
 router.post('/register-student', async (req, res) => {
     const { name, email, password, selectedSkills } = req.body;
-    console.log("📥 Student Registration Request:", { name, email, password, selectedSkills });
+    console.log(" Student Registration Request:", { name, email, password, selectedSkills });
 
     if (!name || !email || !password || !selectedSkills) {
         return res.status(400).send('Please fill in all required fields.');
@@ -40,7 +40,7 @@ router.post('/register-student', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log("🔐 Hashed Password:", hashedPassword);
+        console.log(" Hashed Password:", hashedPassword);
 
         const sql = `
     INSERT INTO users (id, name, email, password, role, skills)
@@ -95,12 +95,12 @@ router.post('/register-student', async (req, res) => {
 
 // EXPERT REGISTRATION 
 router.post('/register-expert', upload.array('files'), async (req, res) => {
-    const { name, email, password, selectedSkills, description } = req.body;
+    const { name, email, password, selectedSkills, description, hourlyRate } = req.body;
     const files = req.files;
 
-    console.log("📥 Expert Registration Request:", { name, email, password, selectedSkills, description, files });
+    console.log("Expert Registration Request:", { name, email, password, selectedSkills, description, hourlyRate, files });
 
-    if (!name || !email || !password || !description || !selectedSkills) {
+    if (!name || !email || !password || !description || !selectedSkills || !hourlyRate) {
         return res.status(400).send("Please fill in all required fields.");
     }
 
@@ -117,16 +117,16 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const fileNames = files.map(f => f.filename).join(',');
 
-        console.log("🔐 Hashed Password:", hashedPassword);
-        console.log("📎 Uploaded Files:", fileNames);
+        console.log(" Hashed Password:", hashedPassword);
+        console.log(" Uploaded Files:", fileNames);
 
         const sql = `
-            INSERT INTO users (id, name, email, password, role, skills, description, files)
-            VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
+            INSERT INTO users (id, name, email, password, role, skills, description, files, hourly_rate)
+            VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?, ?)
         `;
 
-        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames]);
-        console.log("✅ Expert Insert Result:", result);
+        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames, hourlyRate]);
+        console.log("Expert Insert Result:", result);
 
             // Fetch UUID of newly registered expert
             const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
@@ -173,7 +173,7 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         
     }
      catch (err) {
-        console.error("❌ Expert Registration Error:", err);
+        console.error(" Expert Registration Error:", err);
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).send('Email already in use.');
         }
@@ -230,7 +230,7 @@ router.post('/resend-verification', async (req, res) => {
 // ADMIN REGISTRATION
 router.post('/register-admin', async (req, res) => {
     const { name, email, password, adminKey } = req.body;
-    console.log("📥 Admin Registration Request:", { name, email, password, adminKey });
+    console.log(" Admin Registration Request:", { name, email, password, adminKey });
 
     // 1. Validate secret key
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
@@ -256,7 +256,7 @@ router.post('/register-admin', async (req, res) => {
 
         // 4. Create admin
         const hashedPassword = await bcrypt.hash(password, 10); // hash first
-        console.log("🔐 Hashed Password (admin):", hashedPassword);
+        console.log(" Hashed Password (admin):", hashedPassword);
 
         const [result] = await db.execute(
             `INSERT INTO users (id, name, email, password, role, approved, skills, email_verified)
@@ -372,18 +372,6 @@ router.get('/admin/users', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Database error' });
     }
 });
-
-
-// Auto-approve expert
-/* router.put('/api/approve-expert/:id', (req, res) => {
-  const expertId = req.params.id;
-  const sql = `UPDATE users SET approved = 1 WHERE id = ?`;
-
-  db.query(sql, [expertId], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Failed to approve expert' });
-    res.json({ success: true });
-  });
-}); */
 
 
 // LOGIN

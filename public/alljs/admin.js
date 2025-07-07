@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Refresh data when switching tabs
             if (targetId === 'expert-requests') {
-                fetchPendingExperts();
+                fetchExperts('pending');
             } else if (targetId === 'dashboard') {
                 fetchDashboardStats();
             } else if (targetId === 'user-management') {
@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Fetch pending experts
-    const fetchPendingExperts = async () => {
+    // Fetch experts with filtering
+    const fetchExperts = async (filter = 'pending') => {
         try {
-            const response = await fetch(`${API_BASE_URL}/pending-experts`, {
+            const response = await fetch(`${API_BASE_URL}/experts?filter=${filter}`, {
                 credentials: 'include' // Include session cookies
             });
 
@@ -74,9 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error("Expected array but got: " + typeof experts);
             }
 
-            renderExpertRequests(experts);
+            renderExpertRequests(experts, filter);
         } catch (error) {
-            console.error('Error fetching pending experts:', error);
+            console.error('Error fetching experts:', error);
             // Show user-friendly error
             document.getElementById('expertRequestsContainer').innerHTML = `
                 <div class="error-message">
@@ -85,6 +85,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         }
+    };
+
+    // Fetch pending experts (for backward compatibility)
+    const fetchPendingExperts = async () => {
+        return fetchExperts('pending');
     };
 
     let allUsers = [];
@@ -116,8 +121,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="user-card">
                 <h4>${user.name}</h4>
                 <p>${user.email}</p>
-                <p class="status-${getStatusClass(user.approved)}">
-                    ${getStatusText(user.approved)} ${user.role.toUpperCase()}
+                <p class="status-${getUserStatusClass(user.approved)}">
+                    ${getUserStatusText(user.approved)} ${user.role.toUpperCase()}
                 </p>
                 <div class="user-actions">
                     ${user.approved !== 1 ? 
@@ -191,6 +196,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${skill.status !== 'Rejected' ? `
                             <button class="reject-skill-btn" data-id="${skill.id}">Reject</button>
                         ` : ''}
+                        ${skill.status === 'Pending' ? `
+                            <button class="auto-approve-single-btn" data-id="${skill.id}" data-type="skill" title="Auto-process this skill">
+                                Auto-process
+                            </button>
+                        ` : ''}
                     </div>
             </div>
         `).join('');
@@ -222,8 +232,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Status helpers
+    // Status helpers for experts
     const getStatusText = (approved) => {
+        switch(approved) {
+            case 1: return 'APPROVED';
+            case 0: return 'PENDING';
+            case -1: return 'REJECTED';
+            default: return 'UNKNOWN';
+        }
+    };
+
+    const getStatusClass = (approved) => {
+        switch(approved) {
+            case 1: return 'approved';
+            case 0: return 'pending';
+            case -1: return 'rejected';
+            default: return '';
+        }
+    };
+
+    // Status helpers for user management
+    const getUserStatusText = (approved) => {
         switch(approved) {
             case 1: return 'ACTIVE';
             case 0: return 'PENDING';
@@ -232,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    const getStatusClass = (approved) => {
+    const getUserStatusClass = (approved) => {
         switch(approved) {
             case 1: return 'active';
             case 0: return 'pending';
@@ -242,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Render expert requests
-    const renderExpertRequests = (experts) => {
+    const renderExpertRequests = (experts, filter = 'pending') => {
         const container = document.getElementById('expertRequestsContainer');
 
         if (!Array.isArray(experts)) {
@@ -254,25 +283,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         if (experts.length === 0) {
-            container.innerHTML = '<p>No pending expert requests</p>';
+            container.innerHTML = `<p>No ${filter} experts found</p>`;
             return;
         }
         
-        container.innerHTML = experts.map(expert => `
-            <div class="request-card">
-                <div class="request-info">
-                    <h4>${expert.name}</h4>
-                    <p><strong>Email:</strong> ${expert.email}</p>
-                    <p><strong>Skills:</strong> ${formatSkills(expert.skills)}</p>
-                    ${expert.description ? `<p><strong>Description:</strong> ${expert.description}</p>` : ''}
-                    ${expert.files ? `<p><strong>Files:</strong> ${formatFiles(expert.files)}</p>` : ''}
+        container.innerHTML = experts.map(expert => {
+            const statusClass = getStatusClass(expert.approved);
+            const statusText = getStatusText(expert.approved);
+            const showActions = filter === 'pending';
+            
+            return `
+                <div class="request-card">
+                    <div class="request-info">
+                        <h4>${expert.name}</h4>
+                        <p><strong>Email:</strong> ${expert.email}</p>
+                        <p><strong>Skills:</strong> ${formatSkills(expert.skills)}</p>
+                        ${expert.description ? `<p><strong>Description:</strong> ${expert.description}</p>` : ''}
+                        ${expert.files ? `<p><strong>Files:</strong> ${formatFiles(expert.files)}</p>` : ''}
+                        <p class="status-${statusClass}">
+                            <strong>Status:</strong> ${statusText}
+                        </p>
+                    </div>
+                    ${showActions ? `
+                        <div class="request-actions">
+                            <button class="approve-btn" data-id="${expert.id}">Approve</button>
+                            <button class="reject-btn" data-id="${expert.id}">Reject</button>
+                        </div>
+                    ` : ''}
                 </div>
-                <div class="request-actions">
-                    <button class="approve-btn" data-id="${expert.id}">Approve</button>
-                    <button class="reject-btn" data-id="${expert.id}">Reject</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     };
     
     function formatSkills(skills) {
@@ -384,25 +424,273 @@ document.addEventListener('DOMContentLoaded', function() {
         await updateSkillStatus(id, 'Approved');
             }
         }
-        
+
+        // Auto-approval buttons
+        if (e.target.id === 'auto-approve-experts') {
+            await processAutoApproval('experts');
+        }
+
+        if (e.target.id === 'auto-approve-skills') {
+            await processAutoApproval('skills');
+        }
+
+        if (e.target.id === 'view-auto-stats') {
+            await showAutoApprovalStats('experts');
+        }
+
+        if (e.target.id === 'view-skill-stats') {
+            await showAutoApprovalStats('skills');
+        }
+
+        if (e.target.classList.contains('auto-approve-single-btn')) {
+            const id = e.target.getAttribute('data-id');
+            const type = e.target.getAttribute('data-type');
+            await processSingleAutoApproval(id, type);
+        }
+
+        if (e.target.classList.contains('test-score-btn')) {
+            const id = e.target.getAttribute('data-id');
+            await testExpertScore(id);
+        }
+
         if (e.target.classList.contains('reject-skill-btn')) {
-    const reason = prompt('Enter rejection reason (required):');
-    if (reason) {
-        const id = e.target.getAttribute('data-id');
-        await updateSkillStatus(id, 'Rejected', reason);
-    } else {
-        alert('Rejection reason is required.');
-    }
+            const reason = prompt('Enter rejection reason (required):');
+            if (reason) {
+                const id = e.target.getAttribute('data-id');
+                await updateSkillStatus(id, 'Rejected', reason);
+            } else {
+                alert('Rejection reason is required.');
+            }
         }
     });
     
+    // Auto-approval functions
+    const processSingleAutoApproval = async (id, type) => {
+        try {
+            const button = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+
+            const response = await fetch(`/api/auto-approval/${type}/${id}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Auto-approval failed');
+            }
+
+            const result = await response.json();
+            
+            if (result.processed) {
+                alert(`${type === 'expert' ? 'Expert' : 'Skill'} auto-${result.decision === 'approve' ? 'approved' : 'rejected'} with score ${result.score}/100`);
+                
+                // Refresh the relevant section
+                if (type === 'expert') {
+                    const currentFilter = document.getElementById('expert-filter')?.value || 'pending';
+                    fetchExperts(currentFilter);
+                } else if (type === 'skill') {
+                    fetchSkills();
+                }
+                fetchDashboardStats();
+            } else {
+                alert(`${type === 'expert' ? 'Expert' : 'Skill'} requires manual review (score: ${result.score}/100)`);
+            }
+
+        } catch (error) {
+            console.error('Single auto-approval error:', error);
+            alert(`Auto-approval failed: ${error.message}`);
+        } finally {
+            const button = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = 'Auto-process';
+            }
+        }
+    };
+
+    const processAutoApproval = async (type) => {
+        try {
+            console.log(` Starting auto-approval for ${type}...`);
+            
+            const button = document.getElementById(`auto-approve-${type}`);
+            if (!button) {
+                console.error(`Button not found: auto-approve-${type}`);
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            console.log('Button state updated, making API call...');
+
+            const response = await fetch(`/api/auto-approval/${type}/bulk`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            console.log(`API Response status: ${response.status}`);
+            console.log(`API Response ok: ${response.ok}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Error response:', errorText);
+                throw new Error(`Auto-approval failed: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('Auto-approval result:', result);
+            
+            showAutoApprovalResults(type, result.summary);
+
+            // Refresh the relevant section
+            if (type === 'experts') {
+                // Get current filter and refresh
+                const currentFilter = document.getElementById('expert-filter')?.value || 'pending';
+                fetchExperts(currentFilter);
+            } else if (type === 'skills') {
+                fetchSkills();
+            }
+            fetchDashboardStats();
+
+        } catch (error) {
+            console.error('Auto-approval error:', error);
+            alert(`Auto-approval failed: ${error.message}`);
+        } finally {
+            const button = document.getElementById(`auto-approve-${type}`);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = `Auto-Process All ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            }
+        }
+    };
+
+    const showAutoApprovalStats = async (type) => {
+        try {
+            const response = await fetch('/api/auto-approval/stats', {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch stats');
+            }
+
+            const result = await response.json();
+            const stats = result.stats[type === 'experts' ? 'experts' : 'skills'];
+            
+            showAutoApprovalResults(type, stats, true);
+        } catch (error) {
+            console.error('Error fetching auto-approval stats:', error);
+            alert('Failed to fetch auto-approval statistics');
+        }
+    };
+
+    const showAutoApprovalResults = (type, summary, isStats = false) => {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('auto-approval-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'auto-approval-modal';
+            modal.className = 'auto-approval-modal';
+            modal.innerHTML = `
+                <div class="auto-approval-modal-content">
+                    <h3 id="modal-title">Auto-Approval Results</h3>
+                    <div class="auto-approval-summary" id="modal-summary"></div>
+                    <div class="auto-approval-results" id="modal-results"></div>
+                    <button class="close-modal" onclick="closeAutoApprovalModal()">Close</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const title = document.getElementById('modal-title');
+        const summaryDiv = document.getElementById('modal-summary');
+        const resultsDiv = document.getElementById('modal-results');
+
+        title.textContent = isStats ? `${type.charAt(0).toUpperCase() + type.slice(1)} Auto-Approval Statistics` : `${type.charAt(0).toUpperCase() + type.slice(1)} Auto-Approval Results`;
+
+        // Create summary cards
+        summaryDiv.innerHTML = `
+            <div class="summary-card approved">
+                <h4>Auto-Approved</h4>
+                <div class="number">${summary.autoApproved || summary.auto_approved || 0}</div>
+            </div>
+            <div class="summary-card rejected">
+                <h4>Auto-Rejected</h4>
+                <div class="number">${summary.autoRejected || summary.auto_rejected || 0}</div>
+            </div>
+            <div class="summary-card manual">
+                <h4>Manual Review</h4>
+                <div class="number">${summary.manualReview || summary.manual_review || 0}</div>
+            </div>
+            <div class="summary-card">
+                <h4>Total Processed</h4>
+                <div class="number">${summary.total || 0}</div>
+            </div>
+        `;
+
+        // Show results if available
+        if (summary.results && !isStats) {
+            resultsDiv.innerHTML = '<h4>Detailed Results:</h4>';
+            summary.results.forEach(result => {
+                const scoreClass = result.score >= 75 ? 'high' : result.score >= 50 ? 'medium' : 'low';
+                resultsDiv.innerHTML += `
+                    <div class="result-item">
+                        <span>${type === 'experts' ? 'Expert' : 'Skill'} ID: ${type === 'experts' ? result.expertId : result.skillId}</span>
+                        <span class="result-score ${scoreClass}">Score: ${result.score}/100</span>
+                        <span>${result.decision}</span>
+                    </div>
+                `;
+            });
+        } else {
+            resultsDiv.innerHTML = '<p>No detailed results available for statistics view.</p>';
+        }
+
+        modal.style.display = 'block';
+    };
+
+    const closeAutoApprovalModal = () => {
+        const modal = document.getElementById('auto-approval-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    // Test expert score function
+    const testExpertScore = async (expertId) => {
+        try {
+            console.log(`Testing score for expert: ${expertId}`);
+            
+            const response = await fetch(`/api/auto-approval/expert/${expertId}/score`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get expert score');
+            }
+
+            const result = await response.json();
+            console.log('Score test result:', result);
+            
+            alert(`Expert Score: ${result.score}/100\n\nCheck browser console for detailed breakdown.`);
+            
+        } catch (error) {
+            console.error('Error testing expert score:', error);
+            alert(`Score test failed: ${error.message}`);
+        }
+    };
+
+    // Make closeAutoApprovalModal globally available
+    window.closeAutoApprovalModal = closeAutoApprovalModal;
+
     // Update User status function
     const updateUserStatus = async (userId, action) => {
         try {
             let status;
             switch(action) {
                 case 'approve': status = 1; break;
-                case 'reject': 
+                case 'reject': status = -1; break; 
                 case 'suspend': status = 0; break;
                 case 'delete': status = -1; break;
                 case 'activate': status = 1; break;
@@ -438,6 +726,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('skill-filter')?.addEventListener('change', (e) => {
         const filter = e.target.value; // 'pending', 'approved', 'rejected', 'all'
         fetchSkills(filter);
+    });
+
+    // Expert filter dropdown listener
+    document.getElementById('expert-filter')?.addEventListener('change', (e) => {
+        const filter = e.target.value; // 'pending', 'approved', 'rejected', 'all'
+        fetchExperts(filter);
     });
     
     // Initialize dashboard

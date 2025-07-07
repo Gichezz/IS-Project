@@ -38,22 +38,30 @@
 }
 
 .form input,
-.form select {
+.form select,
+.form textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
     transition: all 0.3s;
+    box-sizing: border-box;
 }
 
 .form input:focus,
-.form select:focus {
+.form select:focus,
+.form textarea:focus {
     border-color: #126cfc;
     outline: none;
     box-shadow: 0 0 0 3px rgba(33, 95, 250, 0.2);
 }
 
+.form textarea {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
 
 .skill-tags-container {
     display: flex;
@@ -93,31 +101,6 @@
 
 .input-group {
     margin-bottom: 20px;
-    
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 450;
-    color: #000;
-}
-
-input[type="text"],
-input[type="file"],
-select,
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    font-family: 'Segoe UI', sans-serif;
-}
-
-textarea {
-    min-height: 100px;
-    resize: vertical;
 }
 
 .file-box {
