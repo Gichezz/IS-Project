@@ -31,16 +31,46 @@ document.addEventListener('DOMContentLoaded', function() {
             const res = await fetch('/api/users/current', {
                 credentials: 'include',
             });
-            if (!res.ok) throw new Error("Not authenticated");
-            return await res.json();
+            
+            if (!res.ok) {
+                console.log('Session check failed, status:', res.status);
+                // Try to get more info about the error
+                const errorText = await res.text();
+                console.log('Error response:', errorText);
+                
+                // Add a small delay and retry once
+                await new Promise(resolve => setTimeout(resolve, 10000));
+                
+                const retryRes = await fetch('/api/users/current', {
+                    credentials: 'include',
+                });
+                
+                if (!retryRes.ok) {
+                    // Don't redirect if we're already on login page
+                    if (window.location.pathname !== '/login.html') {
+                        console.log('Session expired, redirecting to login');
+                        window.location.href = "/login.html";
+                    }
+                    throw new Error("Not authenticated");
+                }
+                
+                const userData = await retryRes.json();
+                console.log('User authenticated on retry:', userData.name);
+                return userData;
+            }
+            
+            const userData = await res.json();
+            console.log('User authenticated:', userData.name);
+            return userData;
         } catch (err) {
             console.error('❌ Error fetching user from session:', err);
-            alert("Please log in to continue.");
-            window.location.href = "/login.html";
+            if (window.location.pathname !== '/login.html') {
+                console.log('Authentication failed, redirecting to login');
+                window.location.href = "/login.html";
+            }
             return null;
         }
     }
-    
 
     currentUser = await getCurrentUserFromSession();
     if (!currentUser || !currentUser.id) return;
@@ -179,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 </div>
             ` : `
-                <div class="message-text">${msg.content}</div>
+                <div class="message-text">${linkify(msg.content)}</div>
                 <div class="message-info">
                     <span>${formatTime(msg.timestamp)}</span>
                     ${isCurrentUser ? `<span class="message-status ${msg.read ? 'read' : 'delivered'}"><i class="fas fa-check${msg.read ? '-double' : ''}"></i></span>` : ''}
@@ -272,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const { conversationId } = await response.json();
 
         if (!conversationId) {
-            console.error("❌ No conversation ID returned");
+            console.error(" No conversation ID returned");
             return;
         }
 
@@ -351,7 +381,7 @@ async function scheduleMeeting() {
 
         const calendarUrl = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(topic)}&dates=${formatForCalendar(start)}/${formatForCalendar(end)}&details=${encodeURIComponent('Meeting for SwapSecure')}&location=${encodeURIComponent('https://zoom.us')}`;
 
-        // ✅ Open Google Calendar in a new tab
+        //  Open Google Calendar in a new tab
         window.open(calendarUrl, '_blank');
 
         // Optionally close modal
@@ -463,6 +493,57 @@ async function scheduleMeeting() {
       addMeetingToUI(meeting);
     }
   });
+  function connectSocket() {
+    if (!socket || !currentUser) return;
+  
+    socket.emit('authenticate', currentUser.id);
+  
+    socket.on('new-message', (message) => {
+      if (activeConversation && activeConversation.id === message.conversationId) {
+        addMessageToUI(message);
+      }
+      updateConversationList();
+    });
+  
+    socket.on('user-status-changed', ({ userId, status }) => {
+      if (
+        activeConversation &&
+        (activeConversation.user1_id === userId || activeConversation.user2_id === userId)
+      ) {
+        updatePartnerStatus(status);
+      }
+      updateConversationList();
+    });
+  
+    socket.on('new-meeting', (meeting) => {
+      if (
+        (activeConversation?.user1_id === meeting.tutorId || activeConversation?.user2_id === meeting.tutorId) &&
+        (activeConversation?.user1_id === meeting.studentId || activeConversation?.user2_id === meeting.studentId)
+      ) {
+        addMeetingToUI(meeting);
+      }
+    });
+  
+    // ✅ Session accepted notification listener
+    socket.on("session-accepted", (notification) => {
+      console.log("🎉 Session accepted notification:", notification);
+  
+      const alertBox = document.createElement("div");
+      alertBox.className = "session-notification";
+      alertBox.innerHTML = `
+          <div class="notification-content">
+              <strong>Your session has been accepted by the expert!</strong><br>
+              <p><strong>Session Time:</strong> ${notification.time}</p>
+              <p><strong>Notes:</strong> ${notification.notes}</p>
+          </div>
+      `;
+      document.body.appendChild(alertBox);
+  
+      setTimeout(() => alertBox.remove(), 10000);
+    });
+  }
+  
+  
 }
 
 
@@ -470,3 +551,11 @@ async function scheduleMeeting() {
     loadConversations();
      })();
 });
+
+// Utility function to convert URLs in text to clickable links
+function linkify(text) {
+    const urlPattern = /(https?:\/\/[\w\-\.\/?#=&;%+~:@!$'()*\[\],]+)/g;
+    return text.replace(urlPattern, function(url) {
+        return `<a href="${url}" target="_blank">${url}</a>`;
+    });
+}

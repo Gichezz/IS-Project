@@ -18,6 +18,11 @@ const { v4: uuidv4 } = require('uuid');
 
 // ===================== Express App Setup =====================
 const app = express();
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.path}`);
+  next();
+});
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -38,11 +43,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// CORS Setup (BEFORE session)
+//  CORS Setup (BEFORE session)
 app.use(cors({
   origin: 'http://127.0.0.1:3010', // Set exact origin
   credentials: true
 }));
+
 
 //Session setup
 app.use(
@@ -55,12 +61,80 @@ app.use(
       secure: false // Set to true if using HTTPS 
   })
 );
+// Session event listeners for debugging
+app.use((req, res, next) => {
+  const originalEnd = res.end;
+  res.end = function() {
+    if (req.session && req.session.user) {
+      console.log(`Session maintained for user: ${req.session.user.id}`);
+    }
+    originalEnd.apply(res, arguments);
+  };
+  next();
+});
+
+
+//  Current User Session Route
+app.get("/api/users/current", async (req, res) => {
+  try {
+    console.log("=== /api/users/current called ===");
+    console.log("Session check - Session exists:", !!req.session);
+    console.log("Session check - User exists:", !!req.session?.user);
+    console.log("Session check - User ID:", req.session?.user?.id);
+    console.log("Full session object:", JSON.stringify(req.session, null, 2));
+    
+    if (!req.session || !req.session.user) {
+      console.log("❌ Session validation failed - redirecting to login");
+      return res.status(401).json({ error: "Not logged in" });
+    }
+
+    const userId = req.session.user.id;
+    console.log("✅ Fetching user with ID:", userId);
+    
+    // First, let's check what users exist in the database
+    const [allUsers] = await db.execute("SELECT id, name, email FROM users LIMIT 5");
+    console.log(" Available users in database:", allUsers);
+    
+    const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
+
+    if (rows.length > 0) {
+      console.log("✅ User found:", rows[0].name);
+      res.json(rows[0]);
+    } else {
+      console.log("❌ User not found in database for ID:", userId);
+      console.log("🔍 Checking if user ID format is correct...");
+      
+      // Try to find user by email instead
+      if (req.session.user.email) {
+        const [emailRows] = await db.execute("SELECT * FROM users WHERE email = ?", [req.session.user.email]);
+        if (emailRows.length > 0) {
+          console.log("✅ User found by email:", emailRows[0].name);
+          console.log("🔄 Updating session with correct user ID:", emailRows[0].id);
+          req.session.user.id = emailRows[0].id;
+          res.json(emailRows[0]);
+        } else {
+          console.log("❌ User not found by email either");
+          res.status(404).json({ error: "User not found" });
+        }
+      } else {
+        res.status(404).json({ error: "User not found" });
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error fetching user:", err);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+
+
 
 // Session verification middleware to protected routes
 app.use((req, res, next) => {
     // Paths that don't require authentication
     const publicPaths = ['/login', '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html', 
-      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html', 
+      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html','/api/mpesa/stk/callback', 
+      '/api/users/current' ,'/connect.html',
       '/reset-password', '/resetPassword.html', '/verify-email'];
     
     if (publicPaths.includes(req.path)) {
@@ -126,26 +200,7 @@ app.get('/check-session', (req, res) => {
 
 
 
-//  Current User Session Route
-app.get("/api/users/current", async (req, res) => {
-  try {
-    if (!req.session || !req.session.user) {
-      return res.status(401).json({ error: "Not logged in" });
-    }
 
-    const userId = req.session.user.id;
-    const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
-
-    if (rows.length > 0) {
-      res.json(rows[0]);
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
-  } catch (err) {
-    console.error("Error fetching user:", err);
-    res.status(500).json({ error: "Failed to fetch user" });
-  }
-});
 
 // Get User by ID
 app.get("/api/users/:userId", async (req, res) => {
@@ -234,7 +289,7 @@ app.post("/api/conversations/:id/read", async (req, res) => {
   try {
     console.log(` Marking messages in conversation ${conversationId} as read for user ${userId}`);
 
-    // ✅ Update all messages not sent by the current user as read
+    // Update all messages not sent by the current user as read
     await db.execute(`
       UPDATE messages 
       SET is_read = TRUE 
@@ -310,7 +365,7 @@ const [result] = await db.execute(
       
 
       const message = {
-  id: messageId, // 👈 Use the UUID here
+  id: messageId, 
   senderId,
   content,
   timestamp: new Date(),
@@ -352,6 +407,25 @@ const [result] = await db.execute(
       socket.emit("meeting-error", { error: "Failed to schedule meeting" });
     }
   });
+  // SESSION ACCEPTED EVENT
+  socket.on("session-accepted", ({ expertId, studentId, sessionId, notes, time }) => {
+    const notification = {
+      type: "session-accepted",
+      expertId,
+      studentId,
+      sessionId,
+      notes,
+      time,
+      timestamp: new Date()
+    };
+
+    if (onlineUsers.has(studentId)) {
+      io.to(onlineUsers.get(studentId)).emit("session-accepted", notification);
+      console.log(`Notified student ${studentId} that session ${sessionId} was accepted`);
+    }
+  });
+
+
 
   socket.on("disconnect", () => {
     for (let [userId, socketId] of onlineUsers.entries()) {
@@ -363,6 +437,9 @@ const [result] = await db.execute(
     }
   });
 });
+
+// Make Socket.IO available to routes
+app.set('io', io);
 
 
 //  Start server using HTTP server (for both Express + Socket.IO)

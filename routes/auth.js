@@ -6,7 +6,7 @@ const path = require("path");
 const db = require('../database');
 const router = express.Router();
 const Activity = require('./activity');
-const sendEmail = require('../sendEmail')
+const sendEmail = require('../sendEmail');
 
 
 // Multer storage config

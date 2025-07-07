@@ -98,7 +98,7 @@ exports.stkPush = async (req, res) => {
 
         const checkoutID = response.data.CheckoutRequestID;
         console.log("STK Push Sent to Phone:", phone);
-        console.log("🆔 Tracking CheckoutRequestID:", checkoutID);
+        console.log("Tracking CheckoutRequestID:", checkoutID);
 
         paymentStatusMap.set(checkoutID, {
             phone,
@@ -114,9 +114,9 @@ setTimeout(() => {
             status: "timeout",
             message: "No response from M-Pesa "
         });
-        console.warn("⏳ Timeout - No callback for:", checkoutID);
+        console.warn(" Timeout - No callback for:", checkoutID);
     }
-},  30 * 1000); 
+},  60 * 1000); 
         res.json({
             success: true,
             message: "STK Push sent",
@@ -141,37 +141,49 @@ function getPaymentStatus(checkoutID) {
 exports.checkPaymentStatus = async (req, res) => {
     const checkoutID = req.params.checkoutID;
     const status = await getPaymentStatus(checkoutID);
-    console.log("📡 Payment status check for:", checkoutID, "→", status);
+    console.log("Payment status check for:", checkoutID, "→", status);
 
     if (status.found && status.phone) {
         pendingPayments.delete(status.phone);
     }
-    res.json(status);
+    if (status.found) {
+        res.json({ success: true, ...status });
+    } else {
+        res.json({ success: false });
+    }
 };
 
 
 //===================== 5. M-Pesa Callback Handler =====================
-exports.mpesaCallback = (req, res) => {
+exports.mpesaCallback = async (req, res) => {
     const db = require("../database");
     const formatDateTime = require("../formatDateTime");
 
-    console.log("📥 Callback received");
-    console.log("📄 Raw body:", JSON.stringify(req.body, null, 2));
+    console.log("Callback received");
+    console.log("Raw body:", JSON.stringify(req.body, null, 2));
 
     const body = req.body;
     if (!body || !body.Body || !body.Body.stkCallback) {
-        console.error("❌ Invalid callback format:", JSON.stringify(body, null, 2));
+        console.error(" Invalid callback format:", JSON.stringify(body, null, 2));
         return res.status(400).send("Invalid callback format");
     }
+
+    // Set a timeout to ensure we always respond
+    const responseTimeout = setTimeout(() => {
+        console.log("Sending timeout response for callback");
+        if (!res.headersSent) {
+            res.sendStatus(200);
+        }
+    }, 10000); // 10 second timeout
 
     const callback = body.Body.stkCallback;
     const checkoutRequestID = callback.CheckoutRequestID;
     const resultCode = callback.ResultCode;
     const resultDesc = callback.ResultDesc;
 
-    console.log("🧾 CheckoutRequestID:", checkoutRequestID);
-    console.log("🔄 Result Code:", resultCode);
-    console.log("📜 Result Description:", resultDesc);
+    console.log(" CheckoutRequestID:", checkoutRequestID);
+    console.log(" Result Code:", resultCode);
+    console.log(" Result Description:", resultDesc);
 
     let phone = "Unknown";
 
@@ -194,47 +206,57 @@ exports.mpesaCallback = (req, res) => {
         const tempData = paymentStatusMap.get(checkoutRequestID);
         const service_name = tempData?.service || callback.AccountReference || 'Unknown';
 
-        const sql = `INSERT INTO mpesa_payments (phone, amount, mpesa_code, transaction_date, service_name) VALUES (?, ?, ?, ?, ?)`;
-        const values = [phone, amount, mpesa_code, formattedDate, service_name];
+        const sql = `INSERT INTO mpesa_payments (phone, amount, mpesa_code, transaction_date, service_name, status, checkout_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const values = [phone, amount, mpesa_code, formattedDate, service_name, 'success', checkoutRequestID];
+        
+        console.log(" Inserting to DB:", { phone, amount, mpesa_code, formattedDate, service_name });
 
-        console.log("💾 Inserting to DB:", { phone, amount, mpesa_code, formattedDate, service_name });
-
-        db.query(sql, values, (err) => {
-            if (err) {
-                console.error("❌ DB Insert Error:", err);
-                return res.status(500).send("DB Insert Error");
-            }
-
-            console.log("✅ M-Pesa Payment Recorded Successfully");
+        // Use async/await with promise-based database
+        try {
+            await db.execute(sql, values);
+            console.log(" M-Pesa Payment Recorded Successfully");
             
+            // Clear the timeout since we're responding
+            clearTimeout(responseTimeout);
+            
+            // Send response immediately after successful DB insert
+            res.sendStatus(200);
+            console.log("Response sent successfully");
 
-
-            const tutorQuery = `SELECT email FROM users WHERE role = 'expert' AND skills LIKE ? LIMIT 1`;
-            db.query(tutorQuery, [`%${service_name}%`], async (err, result) => {
-                if (err) {
-                    console.error("❌ Tutor Email Fetch Error:", err);
-                } else if (result.length > 0) {
-                    const tutorEmail = result[0].email;
+            // Handle tutor notification asynchronously (don't block the response)
+            try {
+                const [tutorResult] = await db.execute(
+                    `SELECT email FROM users WHERE role = 'expert' AND skills LIKE ? LIMIT 1`,
+                    [`%${service_name}%`]
+                );
+                
+                if (tutorResult.length > 0) {
+                    const tutorEmail = tutorResult[0].email;
                     const emailText = `Hello Tutor,\n\nA Student has made payment for your service: \"${service_name}\".\n\nAccept the session to begin tutoring.\n\nRegards,\nSkillSwap Team`;
                     try {
                         await sendEmail(tutorEmail, "New Payment Received - SkillSwap", emailText);
-                        console.log("📧 Email sent to:", tutorEmail);
+                        console.log("Email sent to:", tutorEmail);
                     } catch (e) {
                         console.error(" Email Send Error:", e.message);
                     }
                 } else {
-                    console.warn("⚠️ No tutor found matching service:", service_name);
+                    console.warn(" No tutor found matching service:", service_name);
                 }
-                // Cleanup and respond
-                setTimeout(() => {
-                    paymentStatusMap.delete(checkoutRequestID);
-                    console.log("🧹 Cleaned up payment status for", checkoutRequestID);
-                }, 20 * 1000);
-
-                res.sendStatus(200); // Respond once everything is handled
-          
-            });
-        });
+            } catch (tutorErr) {
+                console.error(" Tutor Email Fetch Error:", tutorErr);
+            }
+            
+            // Cleanup
+            setTimeout(() => {
+                paymentStatusMap.delete(checkoutRequestID);
+                console.log(" Cleaned up payment status for", checkoutRequestID);
+            }, 20 * 1000);
+            
+        } catch (dbErr) {
+            console.error(" DB Insert Error:", dbErr);
+            clearTimeout(responseTimeout);
+            return res.status(500).send("DB Insert Error");
+        }
     } else {
         const previousData = paymentStatusMap.get(checkoutRequestID) || {};
         paymentStatusMap.set(checkoutRequestID, {
@@ -244,12 +266,15 @@ exports.mpesaCallback = (req, res) => {
             phone: phone
         });
 
-        console.log("❌ Payment failed or cancelled:");
-        console.log("🧾 CheckoutRequestID:", checkoutRequestID);
-        console.log("📞 Phone:", phone);
-        console.log("📜 Result Description:", resultDesc);
-        console.log("📦 Full Callback Payload:", JSON.stringify(callback, null, 2));
+        console.log(" Payment failed or cancelled:");
+        console.log(" CheckoutRequestID:", checkoutRequestID);
+        console.log(" Phone:", phone);
+        console.log(" Result Description:", resultDesc);
+        console.log(" Full Callback Payload:", JSON.stringify(callback, null, 2));
 
+        // Clear the timeout since we're responding
+        clearTimeout(responseTimeout);
         res.sendStatus(200); // Always respond 200 to Safaricom
+        console.log("Response sent for failed payment");
     }
 };

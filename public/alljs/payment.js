@@ -1,6 +1,51 @@
 
 document.addEventListener('DOMContentLoaded', function () {
     
+    // Add this function to show payment success message
+    function showPaymentSuccess() {
+        // Create success overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+        
+        const successBox = document.createElement('div');
+        successBox.style.cssText = `
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        `;
+        
+        successBox.innerHTML = `
+            <div style="color: #28a745; font-size: 48px; margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 style="color: #28a745; margin-bottom: 10px;">Payment Successful!</h2>
+            <p style="color: #666; margin-bottom: 20px;">Your payment has been processed successfully.</p>
+            <p style="color: #999; font-size: 14px;">Redirecting to chat in 2 seconds...</p>
+        `;
+        
+        overlay.appendChild(successBox);
+        document.body.appendChild(overlay);
+        
+        // Remove overlay and redirect after 2 seconds
+        setTimeout(() => {
+            document.body.removeChild(overlay);
+            window.location.href = '/connect.html';
+        }, 2000);
+    }
+    
     // Get URL parameters like service and amount
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -75,34 +120,30 @@ document.addEventListener('DOMContentLoaded', function () {
                             console.log("📡 Polling response:", result);
 
                             if (result.found && result.status) {
-                                //  Only stop polling if result is final (success or failed)
-                                if (["success", "failed"].includes(result.status)) {
+                                //  Only stop polling if result is final (success, failed, or timeout)
+                                if (["success", "failed", "timeout"].includes(result.status)) {
                                     clearInterval(interval);
 
                                     if (result.status === "success") {
-                                        //✅ Store user in localStorage before redirecting
-                         fetch('/api/users/current', { credentials: 'include' })
-        .then(res => res.json())
-        .then(user => {
-            if (user && user.id) {
-                localStorage.setItem('currentUser', JSON.stringify(user));
-            }
-                                        //  Payment successful
-                                        document.getElementById('paymentForm').style.display = 'none';
-                                        document.getElementById('confirmationMessage').style.display = 'block';
-                                        document.getElementById('status').textContent = "Payment Successful!";
-
-                                      
-                                        // Now redirect
-                                          window.location.href = `connect.html`; 
-                                          })
-        .catch(err => {
-            console.error("Couldn't fetch user info after payment:", err);
-            alert("Payment succeeded, but we couldn't fetch user info.");
-            window.location.href = `login.html`;
-        });
-
-    
+                                        // Store user in localStorage before redirecting
+                                        fetch('/api/users/current', { credentials: 'include' })
+                                        .then(res => res.json())
+                                        .then(user => {
+                                            if (user && user.id) {
+                                                localStorage.setItem('currentUser', JSON.stringify(user));
+                                            }
+                                            // Show payment success overlay and redirect after 2 seconds
+                                            showPaymentSuccess();
+                                        })
+                                        .catch(err => {
+                                            console.error("Couldn't fetch user info after payment:", err);
+                                            // Still show success message even if user fetch fails
+                                            showPaymentSuccess();
+                                        });
+                                    } else if (result.status === "timeout") {
+                                        // Payment timed out
+                                        document.getElementById('status').textContent = "Payment timed out. Please try again.";
+                                        document.getElementById('payButton').disabled = false;
                                     } else {
                                         //  Payment failed or cancelled
                                         document.getElementById('status').textContent = " Payment Failed or Cancelled.";
@@ -110,14 +151,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                     }
                                 } else {
                                     // Still pending – can show spinner or leave silently
-                                    console.log("⌛ Payment still pending...");
+                                    console.log(" Payment still pending...");
                                 }
                             }
                         })
                         .catch(err => {
                             console.error("Polling error:", err);
                         });
-                }, 3000); // ⏳ Check every 3 seconds
+                }, 3000); //  Check every 3 seconds
             } else {
                 //  STK push failed on backend
                 alert('Payment failed: ' + (data.message || 'Unknown error'));

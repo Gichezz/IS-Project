@@ -1,4 +1,53 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Socket.IO connection
+    const socket = io("http://127.0.0.1:3010");
+    
+    // Get current user ID for Socket.IO authentication
+    const currentUserElement = document.querySelector('[data-expert-id]');
+    const currentUserId = currentUserElement ? currentUserElement.getAttribute('data-expert-id') : null;
+    
+    if (currentUserId) {
+        socket.emit('authenticate', currentUserId);
+    }
+    
+    // Listen for session accepted notifications (for experts to see when they accept sessions)
+    socket.on('session-accepted', (notification) => {
+        console.log('🔔 Session accepted notification received:', notification);
+        
+        // Show notification to expert
+        showSessionAcceptedNotification(notification);
+        
+        // Refresh the session requests list
+        loadSessionRequests();
+    });
+    
+    function showSessionAcceptedNotification(notification) {
+        // Create notification element
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'notification-popup success';
+        notificationDiv.innerHTML = `
+            <div class="notification-content">
+                <div class="notification-icon">✅</div>
+                <div class="notification-text">
+                    <h4>Session Accepted!</h4>
+                    <p>You have accepted the session request for <strong>${notification.skillRequested}</strong>.</p>
+                    <p><small>Session ID: ${notification.sessionId}</small></p>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notificationDiv);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (notificationDiv.parentElement) {
+                notificationDiv.remove();
+            }
+        }, 10000);
+    }
+    
     // Fetch expert notifications
     const fetchNotifications = async () => {
         try {
@@ -363,6 +412,17 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 const sessionId = this.closest('.session-card').getAttribute('data-session-id');
                 updateSessionStatus(sessionId, 'accepted');
+                // ✅ Emit socket notification to student
+            socket.emit("session-accepted", {
+                expertId: currentUser.id,
+                studentId: studentId,
+                sessionId: sessionId,
+                notes: "idk", // optional: fetch from textarea if needed
+                time: sessionTime || new Date().toISOString()
+            });
+
+            // ✅ Feedback to expert
+            alert("Session accepted and student notified!");
             });
         });
         
