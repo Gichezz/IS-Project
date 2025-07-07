@@ -6,6 +6,8 @@
   <title>SkillSwap - Expert Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/allcss/expert-dashboard.css">
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body data-expert-id="YOUR_EXPERT_ID">
   <div class="dashboard-container">
@@ -289,7 +291,7 @@
           
           <div class="form-group">
             <label for="skill-rate">Rate Per Hour (Kshs)</label>
-            <input type="number" id="skill-rate" min="10" step="5" required>
+            <input type="number" id="skill-rate" min="1" step="5" required>
           </div>
 
           <div class="form-group">

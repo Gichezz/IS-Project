@@ -47,7 +47,7 @@ CREATE TABLE session_requests (
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(36),
-    type VARCHAR(50) NOT NULL, -- e.g., 'Registration', 'Expert Approval'
+    type VARCHAR(50) NOT NULL, 
     description TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS activities (
 -- Skills table
 CREATE TABLE IF NOT EXISTS skills (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    expert_id VARCHAR(36) NOT NULL,  -- ✅ changed from INT to VARCHAR(36)
+    expert_id VARCHAR(36) NOT NULL,  
     skill_name VARCHAR(100),
     hourly_rate DECIMAL(10, 2),
     description TEXT,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS session_feedback (
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,  -- ✅ changed from INT to VARCHAR(36)
+    user_id VARCHAR(36) NOT NULL,
     message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -123,3 +123,7 @@ CREATE TABLE meetings (
   FOREIGN KEY (tutor_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+
+   ALTER TABLE mpesa_payments ADD COLUMN status ENUM('pending', 'success', 'failed', 'timeout') DEFAULT 'pending';
+   ALTER TABLE mpesa_payments ADD COLUMN checkout_request_id VARCHAR(100);

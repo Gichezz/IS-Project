@@ -90,6 +90,16 @@ router.put('/session-requests/:id', async (req, res) => {
     const { id } = req.params;
     const { status, requested_time } = req.body;
     const expertId = req.session.user.id;
+
+    // First, get the current session request to get student info
+    const [currentSession] = await executeQuery(
+      'SELECT student_id, skill_requested, requested_time FROM session_requests WHERE id = ?',
+      [id]
+    );
+    
+    if (!currentSession) {
+      return res.status(404).json({ error: 'Session request not found' });
+    }
     
     let sql = 'UPDATE session_requests SET ';
     const params = [];
@@ -114,6 +124,35 @@ router.put('/session-requests/:id', async (req, res) => {
     params.push(id);
     
     await db.execute(sql, params);
+// If session was accepted, send real-time notification to student
+if (status === 'accepted') {
+  // Get expert details
+  const [expert] = await executeQuery(
+    'SELECT name, email FROM users WHERE id = ?',
+    [expertId]
+  );
+  // Emit Socket.IO event to notify student
+  const io = req.app.get('io');
+  const notification = {
+    type: 'session-accepted',
+    sessionId: id,
+    expertId: expertId,
+    studentId: currentSession.student_id,
+    expertName: expert.name,
+    skillRequested: currentSession.skill_requested,
+    requestedTime: requested_time || currentSession.requested_time,
+    timestamp: new Date()
+  };
+  
+  io.emit('session-accepted', notification);
+  console.log(` Real-time notification sent: Expert ${expert.name} accepted session ${id} for student ${currentSession.student_id}`);
+}
+
+
+
+
+
+
     res.json({ success: true, message: 'Session updated successfully' });
   } catch (error) {
     console.error('Error updating session request:', error);
