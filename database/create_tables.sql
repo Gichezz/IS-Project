@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     approved TINYINT(1) DEFAULT 0, -- 0 = not approved, 1 = approved
     reset_token VARCHAR(255),
-    reset_token_expires DATETIME
+    reset_token_expires DATETIME,
+    email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255)
 );
 -- Payment Table
 CREATE TABLE IF NOT EXISTS mpesa_payments (

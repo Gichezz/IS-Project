@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth');
 const sessionRoutes = require('./routes/sessionRoutes');
 const session = require("express-session");
 const userRoutes = require('./routes/userRoutes');
+const skillsRoutes = require('./routes/skills');
+const expertsRoutes = require('./routes/experts');
 
 const db = require("./database");
 
@@ -130,8 +132,10 @@ app.get("/api/users/current", async (req, res) => {
 // Session verification middleware to protected routes
 app.use((req, res, next) => {
     // Paths that don't require authentication
-    const publicPaths = ['/login', '/session', '/login.html', '/register.html','/studentsignup.html', '/tutorsignup.html', 
-      '/register-student','/register-expert', '/forgot-password', '/forgotPassword.html', '/reset-password', '/resetPassword.html','/api/mpesa/stk/callback', '/api/users/current','/connect.html'];
+    const publicPaths = ['/login', '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html', 
+      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html','/api/mpesa/stk/callback', 
+      '/api/users/current','/connect.html' ,
+      '/reset-password', '/resetPassword.html', '/verify-email'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -172,6 +176,8 @@ app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
 app.use(userRoutes);
+app.use('/api/skills', skillsRoutes);
+app.use('/api/experts', expertsRoutes);
 
 
 

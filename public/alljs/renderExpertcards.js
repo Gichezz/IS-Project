@@ -2,7 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const selectedSkill = params.get('skill')?.toLowerCase().trim();
   const container = document.querySelector('.experts-container');
+  const expertsGrid = document.querySelector('.experts-grid');
   const noResults = document.getElementById('no-results');
+  
+  // Determine if we're on home page (limited experts) or experts page (all experts)
+  const isHomePage = window.location.pathname.includes('home.html') || 
+                    (window.location.pathname === '/' || window.location.pathname === '/index.html');
+  const maxExperts = isHomePage ? 6 : Infinity;
 
   // Function to clean skill string
   const cleanSkill = (skill) => {
@@ -41,20 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Fetch and render approved experts
-  fetch('/register-auth/expert-cards')
+  fetch('/api/experts/cards')
     .then(res => res.json())
     .then(experts => {
       if (!experts.length) {
-          noResults.style.display = 'block';
+          if (noResults) noResults.style.display = 'block';
           return;
       }
 
+      let expertCount = 0;
+      const targetContainer = expertsGrid || container;
+
       experts.forEach(expert => {
+          if (expertCount >= maxExperts) return; // Limit experts on home page
+          
           const skills = parseSkills(expert.skillDataAttr);
           
           if (!skills.length) return; // Skip if no skills
 
-          skills.forEach(skill => {
+          // On home page, only show first skill per expert
+          const skillsToShow = isHomePage ? [skills[0]] : skills;
+
+          skillsToShow.forEach(skill => {
+              if (expertCount >= maxExperts) return; // Double check limit
+              
               const skillClean = cleanSkill(skill.skill_name);
               const skillId = skill.skill_id;
               if (!skillClean || !skillId) return;
@@ -82,7 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
               `;
 
-              container.appendChild(card);
+              targetContainer.appendChild(card);
+              expertCount++;
           });
       });
 
@@ -94,18 +111,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   function filterExpertsBySkill(skillToMatch) {
-    const cards = container.querySelectorAll('.expert-card');
+    const cards = (expertsGrid || container).querySelectorAll('.expert-card');
     let visible = 0;
     
-    cards.forEach(card => {
-      const skill = card.getAttribute('data-skill');
-      if (!skillToMatch || skill === skillToMatch) {
+    if (!skillToMatch) {
+      // Show all cards if no skill filter
+      cards.forEach(card => {
         card.style.display = 'flex';
         visible++;
-      } else {
-        card.style.display = 'none';
+      });
+    } else {
+      // Map skill slugs to skill names for better matching
+      const skillMapping = {
+        'web-dev': 'web development',
+        'web-app': 'web development',
+        'web-app-development': 'web development',
+        'ai': 'artificial intelligence',
+        'artificial-intelligence': 'artificial intelligence',
+        'crocheting': 'crochet',
+        'crochet': 'crochet'
+      };
+      
+      // Convert slug to skill name
+      let skillName = skillToMatch.replace(/-/g, ' ');
+      
+      // Apply mapping if exists
+      if (skillMapping[skillToMatch]) {
+        skillName = skillMapping[skillToMatch];
       }
-    });
+      
+      cards.forEach(card => {
+        const cardSkill = card.getAttribute('data-skill');
+        // Check if the skill matches (case-insensitive)
+        if (cardSkill && (
+          cardSkill.includes(skillName) || 
+          skillName.includes(cardSkill) ||
+          cardSkill.includes(skillToMatch) ||
+          skillToMatch.includes(cardSkill) ||
+          cardSkill.replace(/\s+/g, '-') === skillToMatch ||
+          skillToMatch.replace(/-/g, ' ') === cardSkill
+        )) {
+          card.style.display = 'flex';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
     
     if (noResults) noResults.style.display = visible ? 'none' : 'block';
   }

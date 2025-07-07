@@ -191,6 +191,7 @@ nav {
 
 #signup-btn {
   margin-top: 40px;
+  display: none;
 }
 
 #signup-btn a {
@@ -210,8 +211,6 @@ nav {
   border: 1px solid #000;
   transform: scale(1);
 }
-
-
 
 /* CATEGORY SECTION */
 #category-section {
@@ -369,8 +368,23 @@ nav {
 
 .experts-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 2 cards per row */
+  grid-template-columns: repeat(3, 1fr); /* 3 cards per row */
   gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive grid */
+@media (max-width: 1024px) {
+  .experts-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 cards per row on tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .experts-grid {
+    grid-template-columns: 1fr; /* 1 card per row on mobile */
+  }
 }
 
 /* Expert Card Styling */
@@ -380,21 +394,36 @@ nav {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
   padding: 20px;
   display: flex;
-  max-width: 500px; 
-  margin: 0 auto 30px auto;
+  flex-direction: column;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 15px;
   transition: transform 0.3s ease;
+  height: 200px; /* Fixed height for consistent grid */
+  min-height: 200px;
 }
 
 .expert-card:hover {
   transform: translateY(-5px);
 }
 
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .expert-info {
   display: flex;
-  flex: 1 1 60%;
   gap: 15px;
 }
 
@@ -425,7 +454,6 @@ nav {
 }
 
 .expert-actions {
-  flex: 1 1 35%;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

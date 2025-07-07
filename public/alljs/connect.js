@@ -306,6 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+
+        //  Emit only after getting valid conversationId
+
         socket.emit('private-message', {
             senderId: currentUser.id,
             receiverId: userId,

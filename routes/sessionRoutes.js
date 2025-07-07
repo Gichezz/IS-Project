@@ -7,14 +7,14 @@ router.post('/api/session-requests', async (req, res) => {
   try {
     const { skill_id, skill_requested, student_id, student_email, expert_id, requested_time, description } = req.body;
     
-    const result = await db.execute(
+    const [rows] = await db.execute(
       'INSERT INTO session_requests (skill_id, skill_requested, student_id, student_email, expert_id, requested_time, description) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [skill_id, skill_requested, student_id, student_email, expert_id, requested_time, description]
     );
     
     res.json({ 
       success: true,
-      sessionId: result.insertId 
+      sessionId: rows.insertId 
     });
   } catch (error) {
     console.error('Error creating session request:', error);
@@ -101,10 +101,12 @@ router.put('/session-requests/:id/student-complete', async (req, res) => {
     const studentId = req.session.user.id;
 
     // Verify the session belongs to this student
-    const [session] = await executeQuery(
+    const [rows] = await db.execute(
       'SELECT student_id FROM session_requests WHERE id = ?',
       [id]
     );
+
+    const session = rows[0];
 
     if (!session || session.student_id !== studentId) {
       return res.status(404).json({ error: 'Session not found or not authorized' });
@@ -117,7 +119,7 @@ router.put('/session-requests/:id/student-complete', async (req, res) => {
     );
 
     // Check if both parties have completed
-    const [sessionStatus] = await executeQuery(
+    const [sessionStatus] = await db.execute(
       'SELECT student_completed, expert_completed FROM session_requests WHERE id = ?',
       [id]
     );

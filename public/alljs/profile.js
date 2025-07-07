@@ -116,9 +116,10 @@ function createSessionElement(session) {
     }
 
     const isCompleted = session.status === 'COMPLETED';
-    const chatDisabled = isCompleted ? 'disabled' : '';
-    const completeDisabled = isCompleted || session.studentCompleted ? 'disabled' : '';
-    const completeText = session.studentCompleted ? 'Completed' : 'Mark Completed';
+    const studentMarked = !!session.student_completed || !!session.studentCompleted;
+    const chatDisabled = isCompleted || studentMarked ? 'disabled' : '';
+    const completeDisabled = isCompleted || studentMarked ? 'disabled' : '';
+    const completeText = studentMarked ? 'Completed' : 'Mark Completed';
 
     sessionItem.innerHTML = `
         <div class="session-info">
@@ -188,7 +189,11 @@ async function handleMarkCompleted(button) {
             body: JSON.stringify({ completedBy: 'student' })
         });
 
-        if (!response.ok) throw new Error('Failed to mark session as completed');
+        if (!response.ok) {
+            const errorDetails = await response.text();
+            console.error(`Mark complete failed (${response.status}):`, errorDetails);
+            throw new Error('Failed to mark session as completed');
+          }
 
         const result = await response.json();
 

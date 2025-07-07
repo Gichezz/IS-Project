@@ -14,6 +14,11 @@ function isAdmin(req, res, next) {
 // Get dashboard stats
 router.get('/stats', isAdmin, async (req, res) => {
     try {
+        // Get total users count
+        const [allUsers] = await db.query(
+            'SELECT COUNT(*) as count FROM users'
+        );
+
         // Get pending experts count
         const [pendingExperts] = await db.query(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 0'
@@ -29,6 +34,12 @@ router.get('/stats', isAdmin, async (req, res) => {
             "SELECT COUNT(*) AS count FROM skills WHERE status = 'Pending'"
         );
 
+        // Get total revenue from mpesa_payments
+        const [revenueRows] = await db.query(
+            'SELECT SUM(amount) as total FROM mpesa_payments'
+        );
+        const totalRevenue = revenueRows[0].total || 0;
+
         // Get recent activities
         const recentActivities = await Activity.getRecent(5);
         
@@ -36,6 +47,8 @@ router.get('/stats', isAdmin, async (req, res) => {
             pendingExperts: pendingExperts[0].count,
             totalExperts: totalExperts[0].count,
             pendingSkills: pendingSkills[0].count,
+            allUsers: allUsers[0].count,
+            totalRevenue,
             recentActivities
         });
     } catch (error) {

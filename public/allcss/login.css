@@ -140,6 +140,20 @@
     text-decoration: underline;
 }
 
+#resend-verification {
+    text-align: center;
+    margin-top: 10px;
+}
+#resend-link {
+    color: #3498db;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: color 0.2s;
+}
+#resend-link:hover {
+    color: #217dbb;
+}
 
 .form {
     position: relative;
