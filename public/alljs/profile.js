@@ -261,7 +261,7 @@ async function handleMarkCompleted(button) {
     }
 }
 
-<<<<<<< HEAD
+
 function showPopup(message) {
     console.log(" showPopup() called with message:", message); // <--- DEBUG
     const popup = document.createElement('div');
@@ -283,7 +283,7 @@ function showPopup(message) {
 }
   
 
-=======
+
 let selectedRating = 0;
 // Placeholder for feedback modal logic
 function openFeedbackModal(sessionId) {
@@ -389,4 +389,4 @@ document.addEventListener('click', function (e) {
         closeFeedbackModal();
     }
 });
->>>>>>> c678d45874b80baa40f96d98875ffb91010cd36c
+
