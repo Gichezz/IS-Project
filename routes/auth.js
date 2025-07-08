@@ -6,7 +6,7 @@ const path = require("path");
 const db = require('../database');
 const router = express.Router();
 const Activity = require('./activity');
-const sendEmail = require('../sendEmail')
+const sendEmail = require('../sendEmail');
 
 
 // Multer storage config
@@ -95,12 +95,12 @@ router.post('/register-student', async (req, res) => {
 
 // EXPERT REGISTRATION 
 router.post('/register-expert', upload.array('files'), async (req, res) => {
-    const { name, email, password, selectedSkills, description } = req.body;
+    const { name, email, password, selectedSkills, description, hourlyRate } = req.body;
     const files = req.files;
 
-    console.log(" Expert Registration Request:", { name, email, password, selectedSkills, description, files });
+    console.log("Expert Registration Request:", { name, email, password, selectedSkills, description, hourlyRate, files });
 
-    if (!name || !email || !password || !description || !selectedSkills) {
+    if (!name || !email || !password || !description || !selectedSkills || !hourlyRate) {
         return res.status(400).send("Please fill in all required fields.");
     }
 
@@ -121,12 +121,12 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
         console.log(" Uploaded Files:", fileNames);
 
         const sql = `
-            INSERT INTO users (id, name, email, password, role, skills, description, files)
-            VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?)
+            INSERT INTO users (id, name, email, password, role, skills, description, files, hourly_rate)
+            VALUES (UUID(), ?, ?, ?, 'expert', ?, ?, ?, ?)
         `;
 
-        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames]);
-        console.log(" Expert Insert Result:", result);
+        const [result] = await db.execute(sql, [name, email, hashedPassword, selectedSkills, description, fileNames, hourlyRate]);
+        console.log("Expert Insert Result:", result);
 
             // Fetch UUID of newly registered expert
             const [rows] = await db.execute(`SELECT id FROM users WHERE email = ?`, [email]);
@@ -372,18 +372,6 @@ router.get('/admin/users', ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Database error' });
     }
 });
-
-
-// Auto-approve expert
-/* router.put('/api/approve-expert/:id', (req, res) => {
-  const expertId = req.params.id;
-  const sql = `UPDATE users SET approved = 1 WHERE id = ?`;
-
-  db.query(sql, [expertId], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Failed to approve expert' });
-    res.json({ success: true });
-  });
-}); */
 
 
 // LOGIN

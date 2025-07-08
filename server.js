@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://127.0.0.1:3010",
+    origin: ['http://127.0.0.1:3010', 'http://localhost:3010'],
     credentials: true,
     methods: ["GET", "POST"]
   }
@@ -45,7 +45,7 @@ app.use(express.json());
 
 //  CORS Setup (BEFORE session)
 app.use(cors({
-  origin: 'http://127.0.0.1:3010', // Set exact origin
+  origin: ['http://127.0.0.1:3010', 'http://localhost:3010'],
   credentials: true
 }));
 
@@ -133,9 +133,9 @@ app.get("/api/users/current", async (req, res) => {
 app.use((req, res, next) => {
     // Paths that don't require authentication
     const publicPaths = ['/login', '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html', 
-      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html','/api/mpesa/stk/callback', 
-      '/api/users/current','/connect.html' ,
-      '/reset-password', '/resetPassword.html', '/verify-email'];
+      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html',
+      '/api/mpesa/stk/callback', '/api/users/current', '/reset-password', '/resetPassword.html',
+       '/verify-email'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -143,6 +143,7 @@ app.use((req, res, next) => {
     
     // Check if session exists and has user data
     if (!req.session || !req.session.user) {
+      console.warn('Blocked request to:', req.path);
         if (req.accepts('html')) {
             return res.redirect('/login.html');
         }
@@ -162,6 +163,7 @@ app.use((err, req, res, next) => {
 
 const adminRoutes = require('./routes/adminRoutes');
 const expertRoutes = require('./routes/expertRoutes');
+const autoApprovalRoutes = require('./routes/autoApproval');
 
 
 
@@ -175,6 +177,7 @@ app.use('/', authRoutes);
 app.use(sessionRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/expert', expertRoutes);
+app.use('/api/auto-approval', autoApprovalRoutes);
 app.use(userRoutes);
 app.use('/api/skills', skillsRoutes);
 app.use('/api/experts', expertsRoutes);

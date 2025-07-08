@@ -14,7 +14,7 @@
   <div class="profile-container">
     <div class="profile-header">
       <div class="profile-pic-container">
-        <img src="/images/default-profile.png" alt="Profile Picture" class="profile-pic">
+        <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="Default Profile" class="profile-pic">
       </div>
       <div class="profile-info">
         <h1 class="user-name">[User Name]</h1>
@@ -96,8 +96,46 @@
       </div>
     </div>
   </div>
+
   
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/alljs/profile.js"></script>
+  
+
+
+  <!-- Feedback Modal -->
+  <div id="feedback-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Session Feedback</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="feedback-form">
+          <input type="hidden" id="feedback-session-id">
+          <div class="form-group">
+            <label for="feedback-rating">Rating:</label>
+            <div id="feedback-stars" class="star-rating">
+              <span data-value="1">&#9733;</span>
+              <span data-value="2">&#9733;</span>
+              <span data-value="3">&#9733;</span>
+              <span data-value="4">&#9733;</span>
+              <span data-value="5">&#9733;</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="feedback-comments">Comments:</label>
+            <textarea id="feedback-comments" rows="4" required></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn secondary-btn close-modal">Cancel</button>
+            <button type="submit" class="btn primary-btn">Submit Feedback</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/alljs/profile.js"></script>
 </body>
 </html>

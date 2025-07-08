@@ -87,6 +87,15 @@ router.get('/api/sessions', async (req, res) => {
       [studentId]
     );
 
+    // For each session, check if feedback exists
+    for (const session of sessions) {
+      const [feedback] = await db.execute(
+        'SELECT id FROM session_feedback WHERE session_id = ?',
+        [session.id]
+      );
+      session.feedbackGiven = feedback.length > 0;
+    }
+
     res.json(sessions);
   } catch (error) {
     console.error('Error fetching sessions:', error);
@@ -141,6 +150,42 @@ router.put('/session-requests/:id/student-complete', async (req, res) => {
   }
 });
 
+// Student submits feedback for a session
+router.post('/api/session-feedback', async (req, res) => {
+  try {
+    const { sessionId, rating, comments } = req.body;
+    const studentId = req.session.user.id;
 
+    // Check if session exists and belongs to this student, and is completed by student
+    const [sessions] = await db.execute(
+      'SELECT student_id, student_completed FROM session_requests WHERE id = ?',
+      [sessionId]
+    );
+    const session = sessions[0];
+    if (!session || session.student_id !== studentId || !session.student_completed) {
+      return res.status(403).json({ error: 'Not authorized or session not completed by student' });
+    }
+
+    // Prevent duplicate feedback
+    const [existing] = await db.execute(
+      'SELECT id FROM session_feedback WHERE session_id = ?',
+      [sessionId]
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Feedback already submitted for this session' });
+    }
+
+    // Insert feedback
+    await db.execute(
+      'INSERT INTO session_feedback (session_id, rating, comments) VALUES (?, ?, ?)',
+      [sessionId, rating, comments]
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
 
 module.exports = router;

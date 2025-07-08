@@ -145,9 +145,12 @@ function createSessionElement(session) {
 
     const isCompleted = session.status === 'COMPLETED';
     const studentMarked = !!session.student_completed || !!session.studentCompleted;
+    const feedbackGiven = !!session.feedbackGiven;
+    const showFeedbackBtn = studentMarked && !feedbackGiven;
     const chatDisabled = isCompleted || studentMarked ? 'disabled' : '';
     const completeDisabled = isCompleted || studentMarked ? 'disabled' : '';
     const completeText = studentMarked ? 'Completed' : 'Mark Completed';
+    const hideAll = studentMarked && feedbackGiven;
 
     sessionItem.innerHTML = `
         <div class="session-info">
@@ -169,13 +172,20 @@ function createSessionElement(session) {
                 <span><strong>Scheduled:</strong> ${new Date(session.scheduledTime).toLocaleString()}</span>
             </div>` : ''}
         </div>
-        <div class="session-actions">
+        <div class="session-actions" style="display: ${hideAll ? 'none' : 'flex'};">
+          ${!hideAll && !showFeedbackBtn ? `
             <button class="btn chat-btn" ${chatDisabled} data-session-id="${session.id}" data-expert-id="${session.expertId}">
                 <i class="fas fa-comments"></i> Chat
             </button>
             <button class="btn complete-btn" ${completeDisabled} data-session-id="${session.id}">
                 <i class="fas fa-check-circle"></i> ${completeText}
             </button>
+          ` : ''}
+            ${showFeedbackBtn ? `
+                <button class="btn feedback-btn" data-session-id="${session.id}">
+                    <i class="fas fa-star"></i> Give Feedback
+                </button>
+            ` : ''}
         </div>
     `;
 
@@ -186,6 +196,7 @@ function setupEventListeners() {
     document.addEventListener('click', function (e) {
         const chatBtn = e.target.closest('.chat-btn');
         const completeBtn = e.target.closest('.complete-btn');
+        const feedbackBtn = e.target.closest('.feedback-btn');
 
         if (chatBtn && !chatBtn.disabled) {
             const sessionId = chatBtn.dataset.sessionId;
@@ -197,6 +208,10 @@ function setupEventListeners() {
 
         if (completeBtn && !completeBtn.disabled) {
             handleMarkCompleted(completeBtn);
+        }
+
+        if (feedbackBtn) {
+            openFeedbackModal(feedbackBtn.dataset.sessionId);
         }
     });
 }
@@ -246,6 +261,7 @@ async function handleMarkCompleted(button) {
     }
 }
 
+<<<<<<< HEAD
 function showPopup(message) {
     console.log(" showPopup() called with message:", message); // <--- DEBUG
     const popup = document.createElement('div');
@@ -267,3 +283,110 @@ function showPopup(message) {
 }
   
 
+=======
+let selectedRating = 0;
+// Placeholder for feedback modal logic
+function openFeedbackModal(sessionId) {
+    const modal = document.getElementById('feedback-modal');
+    document.getElementById('feedback-session-id').value = sessionId;
+    document.getElementById('feedback-comments').value = '';
+    selectedRating = 0;
+    highlightStars(0);
+    setHiddenRating(0);
+    modal.classList.add('active');
+
+    const starsContainer = document.getElementById('feedback-stars');
+    const stars = starsContainer.querySelectorAll('span');
+
+    // Remove old event listeners by cloning each star
+    stars.forEach((oldStar, index) => {
+        const newStar = oldStar.cloneNode(true);
+        starsContainer.replaceChild(newStar, oldStar);
+
+        const value = index + 1;
+
+        newStar.addEventListener('mouseover', () => highlightStars(value));
+        newStar.addEventListener('mouseout', () => highlightStars(selectedRating));
+        newStar.addEventListener('click', () => {
+            selectedRating = value;
+            highlightStars(selectedRating);
+            setHiddenRating(selectedRating);
+        });
+    });
+
+    const feedbackForm = document.getElementById('feedback-form');
+    if (!feedbackForm.dataset.eventsAttached) {
+        feedbackForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const sessionId = document.getElementById('feedback-session-id').value;
+            const rating = selectedRating;
+            const comments = document.getElementById('feedback-comments').value;
+
+            if (!rating || rating < 1 || rating > 5) {
+                alert('Please select a rating.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/session-feedback', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, rating, comments })
+                });
+
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('Feedback submission failed:', errorText);
+                    throw new Error('Failed to submit feedback');
+                }
+
+                closeFeedbackModal();
+
+                const sessionItem = document.querySelector(`.session-item .feedback-btn[data-session-id="${sessionId}"]`)?.closest('.session-item');
+                if (sessionItem) {
+                    const feedbackBtn = sessionItem.querySelector('.feedback-btn');
+                    if (feedbackBtn) feedbackBtn.remove();
+                }
+
+                alert('Thank you for your feedback!');
+            } catch (err) {
+                console.error('Error submitting feedback:', err);
+                alert('Failed to submit feedback. Please try again.');
+            }
+        });
+
+        feedbackForm.dataset.eventsAttached = 'true';
+    }
+}
+
+function highlightStars(rating) {
+    const stars = document.querySelectorAll('#feedback-stars span');
+    stars.forEach((star, index) => {
+        star.classList.toggle('selected', index < rating);
+    });
+}
+
+function setHiddenRating(rating) {
+    let input = document.getElementById('feedback-rating');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.id = 'feedback-rating';
+        input.name = 'rating';
+        document.getElementById('feedback-form').appendChild(input);
+    }
+    input.value = rating;
+}
+
+function closeFeedbackModal() {
+    document.getElementById('feedback-modal').classList.remove('active');
+}
+
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('close-modal')) {
+        closeFeedbackModal();
+    }
+});
+>>>>>>> c678d45874b80baa40f96d98875ffb91010cd36c

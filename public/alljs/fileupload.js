@@ -22,11 +22,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
 
-                // Optional: Display file names
+                // Display file names
                 const fileNames = Array.from(e.dataTransfer.files).map(file => file.name).join(', ');
                 fileArea.querySelector('p').textContent = fileNames || 'Drag & drop files here or click to browse';
 
-                // Optional: Trigger change event
+                // Trigger change event
                 const event = new Event('change');
                 fileInput.dispatchEvent(event);
             }

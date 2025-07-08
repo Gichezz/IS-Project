@@ -38,49 +38,30 @@
 }
 
 .form input,
-.form select {
+.form select,
+.form textarea {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 16px;
     transition: all 0.3s;
+    box-sizing: border-box;
 }
 
 .form input:focus,
-.form select:focus {
+.form select:focus,
+.form textarea:focus {
     border-color: #126cfc;
     outline: none;
     box-shadow: 0 0 0 3px rgba(33, 95, 250, 0.2);
 }
 
-
-.skill-tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-            min-height: 30px;
-        }
-        .skill-tag {
-            background: #3180fe;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-        }
-        .skill-tag-remove {
-            margin-left: 6px;
-            cursor: pointer;
-            color: #000;
-        }
-        .skill-tag-remove:hover {
-            color: #fff;
-        }
-        .hidden {
-            display: none;
-        }
+.form textarea {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
 
 .skill-tags-container {
     display: flex;
@@ -105,7 +86,9 @@
 .skill-tag-remove:hover {
     color: #fff;
 }
-
+.hidden {
+    display: none;
+}
 
 .tutor-registration a{
     color: #130bf8;

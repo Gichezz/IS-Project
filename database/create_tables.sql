@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     role ENUM('student', 'expert','admin') DEFAULT 'expert',
     skills TEXT,             -- For experts only
+    hourly_rate DECIMAL(10, 2) DEFAULT NULL, -- For experts only
     description TEXT,        -- For experts only
     files TEXT,              -- For experts only
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS skills (
     hourly_rate DECIMAL(10, 2),
     description TEXT,
     proof_files VARCHAR(1000) NOT NULL DEFAULT '',
-    status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    status ENUM('Pending', 'Approved', 'Rejected', 'Deleted') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (expert_id) REFERENCES users(id)
 );

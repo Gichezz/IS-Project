@@ -15,27 +15,27 @@ function isAdmin(req, res, next) {
 router.get('/stats', isAdmin, async (req, res) => {
     try {
         // Get total users count
-        const [allUsers] = await db.query(
+        const [allUsers] = await db.execute(
             'SELECT COUNT(*) as count FROM users'
         );
 
         // Get pending experts count
-        const [pendingExperts] = await db.query(
+        const [pendingExperts] = await db.execute(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 0'
         );
         
         // Get total experts count
-        const [totalExperts] = await db.query(
+        const [totalExperts] = await db.execute(
             'SELECT COUNT(*) as count FROM users WHERE role = "expert" AND approved = 1'
         );
 
         // Get pending skill approvals
-        const [pendingSkills] = await db.query(
+        const [pendingSkills] = await db.execute(
             "SELECT COUNT(*) AS count FROM skills WHERE status = 'Pending'"
         );
 
         // Get total revenue from mpesa_payments
-        const [revenueRows] = await db.query(
+        const [revenueRows] = await db.execute(
             'SELECT SUM(amount) as total FROM mpesa_payments'
         );
         const totalRevenue = revenueRows[0].total || 0;
@@ -57,10 +57,45 @@ router.get('/stats', isAdmin, async (req, res) => {
     }
 });
 
-// Get pending experts
+// Get experts with filtering
+router.get('/experts', isAdmin, async (req, res) => {
+    try {
+        const { filter = 'pending' } = req.query;
+        
+        let query = 'SELECT * FROM users WHERE role = "expert"';
+        const params = [];
+
+        switch (filter) {
+            case 'pending':
+                query += ' AND approved = 0';
+                break;
+            case 'approved':
+                query += ' AND approved = 1';
+                break;
+            case 'rejected':
+                query += ' AND approved = -1';
+                break;
+            case 'all':
+                // show all experts
+                break;
+            default:
+                query += ' AND approved = 0'; // Default to pending
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const [experts] = await db.execute(query, params);
+        res.json(experts || []);
+    } catch (error) {
+        console.error('Error in /experts endpoint:', error);
+        res.status(500).json({ message: 'Server error', details: error.message });
+    }
+});
+
+// Get pending experts (for backward compatibility)
 router.get('/pending-experts', isAdmin, async (req, res) => {
     try {
-        const [experts] = await db.query(
+        const [experts] = await db.execute(
             'SELECT * FROM users WHERE role = "expert" AND approved = 0'
         );
         res.json(experts || []);
@@ -77,13 +112,13 @@ router.put('/experts/:id/status', isAdmin, async (req, res) => {
         const { approved } = req.body;
         
         // Update expert status
-        await db.query(
+        await db.execute(
             'UPDATE users SET approved = ? WHERE id = ?',
             [approved ? 1 : 0, id]
         );
         
         // Get user info for activity log
-        const [user] = await db.query(
+        const [user] = await db.execute(
             'SELECT name, email FROM users WHERE id = ?',
             [id]
         );
@@ -110,7 +145,7 @@ router.put('/users/:id/status', isAdmin, async (req, res) => {
     try{
         const { status } = req.body; // 'active', 'suspended', or 'deleted'
         
-        await db.query(
+        await db.execute(
             `UPDATE users 
             SET approved = CASE 
                 WHEN ? = 'deleted' THEN -1 
@@ -130,13 +165,18 @@ router.put('/users/:id/status', isAdmin, async (req, res) => {
 
 // View all users
 router.get('/users', isAdmin, async (req, res) => {
-    const [users] = await db.query(`
-        SELECT id, name, email, role, approved, 
-               DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
-        FROM users
-        ORDER BY created_at DESC
-    `);
-    res.json(users);
+    try {
+        const [users] = await db.execute(`
+            SELECT id, name, email, role, approved, 
+                   DATE_FORMAT(created_at, '%Y-%m-%d') as join_date
+            FROM users
+            ORDER BY created_at DESC
+        `);
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // Get pending skills
@@ -152,10 +192,10 @@ router.get('/skills', isAdmin, async (req, res) => {
 
         if (filter !== 'all') {
             query += ` WHERE s.status = ?`;
-            const [skills] = await db.query(query, [filter.charAt(0).toUpperCase() + filter.slice(1)]);
+            const [skills] = await db.execute(query, [filter.charAt(0).toUpperCase() + filter.slice(1)]);
             res.json(skills);
         } else {
-            const [skills] = await db.query(query);
+            const [skills] = await db.execute(query);
             res.json(skills);
         }
     } catch (error) {
@@ -175,13 +215,13 @@ router.put('/skills/:id/status', isAdmin, async (req, res) => {
         }
         
         // Update skill status
-        await db.query(
+        await db.execute(
             'UPDATE skills SET status = ? WHERE id = ?',
             [status, id]
         );
 
         // Get skill info for activity log
-        const [skillRows] = await db.query(
+        const [skillRows] = await db.execute(
             'SELECT skill_name, expert_id FROM skills WHERE id = ?',
             [id]
         );

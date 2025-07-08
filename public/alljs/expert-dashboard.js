@@ -1,4 +1,26 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    let currentUser;
+    try {
+        const res = await fetch('/session', { credentials: 'include' });
+        const sessionData = await res.json();
+        if (!sessionData.loggedIn || !sessionData.user) {
+            window.location.href = '/login.html';
+            return;
+        }
+        currentUser = sessionData.user;
+        // Now fetch the expert's details
+        const userRes = await fetch(`/api/users/${currentUser.id}`, { credentials: 'include' });
+        const userData = await userRes.json();
+        // Update the welcome message
+        const welcomeEl = document.getElementById('welcome-expert');
+        if (welcomeEl && userData.name) {
+            welcomeEl.textContent = `Welcome ${userData.name}`;
+        }
+    } catch (err) {
+        console.error('Failed to load expert info:', err);
+        window.location.href = '/login.html';
+    }
+
     // Initialize Socket.IO connection
     const socket = io("http://127.0.0.1:3010");
     
@@ -12,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Listen for session accepted notifications (for experts to see when they accept sessions)
     socket.on('session-accepted', (notification) => {
-        console.log('🔔 Session accepted notification received:', notification);
+        console.log(' Session accepted notification received:', notification);
         
         // Show notification to expert
         showSessionAcceptedNotification(notification);
@@ -27,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationDiv.className = 'notification-popup success';
         notificationDiv.innerHTML = `
             <div class="notification-content">
-                <div class="notification-icon">✅</div>
+                <div class="notification-icon"></div>
                 <div class="notification-text">
                     <h4>Session Accepted!</h4>
                     <p>You have accepted the session request for <strong>${notification.skillRequested}</strong>.</p>
@@ -412,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 const sessionId = this.closest('.session-card').getAttribute('data-session-id');
                 updateSessionStatus(sessionId, 'accepted');
-                // ✅ Emit socket notification to student
+                // Emit socket notification to student
             socket.emit("session-accepted", {
                 expertId: currentUser.id,
                 studentId: studentId,
@@ -421,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 time: sessionTime || new Date().toISOString()
             });
 
-            // ✅ Feedback to expert
+            // Feedback to expert
             alert("Session accepted and student notified!");
             });
         });
@@ -586,6 +608,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/expert/skills?expert_id=${expertId}`)
             .then(response => response.json())
             .then(skills => {
+                // Filter out deleted skills just in case
+                skills = skills.filter(skill => skill.status !== 'Deleted');
                 const skillsGrid = document.querySelector('.skills-grid');
                 // Keep the add skill card
                 const addSkillCard = skillsGrid.querySelector('.add-skill-card');
@@ -617,20 +641,31 @@ document.addEventListener('DOMContentLoaded', function() {
         card.className = 'skill-card';
         card.setAttribute('data-skill-id', skill.id);
         
+        // Only show edit button if skill.status === 'Pending'
+        let editButtonHtml = '';
+        if (skill.status === 'Pending') {
+            editButtonHtml = `<button class=\"icon-btn edit-skill\"><i class=\"fas fa-edit\"></i></button>`;
+        }
+        // Only show delete button if skill.status === 'Pending'
+        let deleteButtonHtml = '';
+        if (skill.status === 'Pending') {
+            deleteButtonHtml = `<button class=\"icon-btn delete-skill\"><i class=\"fas fa-trash\"></i></button>`;
+        }
+
         card.innerHTML = `
-            <div class="skill-header">
+            <div class=\"skill-header\">
                 <h3>${skill.skill_name}</h3>
-                <div class="skill-actions">
-                    <button class="icon-btn edit-skill"><i class="fas fa-edit"></i></button>
-                    <button class="icon-btn delete-skill"><i class="fas fa-trash"></i></button>
+                <div class=\"skill-actions\">
+                    ${editButtonHtml}
+                    ${deleteButtonHtml}
                 </div>
             </div>
-            <div class="skill-body">
+            <div class=\"skill-body\">
                 <p><strong>Hourly Rate:</strong> Kshs ${skill.hourly_rate}</p>
                 <p><strong>Description:</strong> ${skill.description}</p>
-                <div class="skill-stats">
-                    <span><i class="fas fa-users"></i> ${skill.students_taught || 0} students taught</span>
-                    <span><i class="fas fa-star"></i> ${skill.average_rating || 'No'} rating</span>
+                <div class=\"skill-stats\">
+                    <span><i class=\"fas fa-users\"></i> ${skill.students_taught || 0} students taught</span>
+                    <span><i class=\"fas fa-star\"></i> ${skill.average_rating || 'No'} rating</span>
                 </div>
             </div>
         `;
@@ -638,12 +673,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Displaying the files uploaded
         if (skill.proof_files) {
             const filesHtml = skill.proof_files.split(',').map(file => `
-            <a href="/${file}" target="_blank" class="proof-link">
-                <i class="fas fa-file-alt"></i> View Proof
+            <a href=\"/${file}\" target=\"_blank\" class=\"proof-link\">
+                <i class=\"fas fa-file-alt\"></i> View Proof
             </a>
             `).join('');
             
-            card.innerHTML += `<div class="proof-files">${filesHtml}</div>`;
+            card.innerHTML += `<div class=\"proof-files\">${filesHtml}</div>`;
         }
         
         return card;
@@ -826,51 +861,77 @@ document.addEventListener('DOMContentLoaded', function() {
     skillForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Verify files are selected
-        const files = fileInput.files;
-        if (files.length === 0) {
-            showError('Please upload at least one proof file');
-            return;
-        }
+        const skillId = document.getElementById('skill-id').value;
+        const isEditing = skillId && skillId.trim() !== '';
 
-        if (files.length > 5) {
-            showError('Maximum 5 files allowed');
-            return;
-        }
-
-        // Basic file type check
-        const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        for (let file of files) {
-            if (!validTypes.includes(file.type)) {
-                showError('Only JPG, PNG, and PDF files are allowed');
+        // For new skills, require files. For editing, files are optional
+        if (!isEditing) {
+            const files = fileInput.files;
+            if (files.length === 0) {
+                showError('Please upload at least one proof file');
                 return;
             }
-            if (file.size > 5 * 1024 * 1024) {
-                showError(`File "${file.name}" exceeds 5MB limit`);
+
+            if (files.length > 5) {
+                showError('Maximum 5 files allowed');
                 return;
             }
-        }
-        
-        const formData = new FormData();
-        const proofFiles = document.getElementById('skill-proof').files;
 
-        // Append all files
-        for (let i = 0; i < proofFiles.length; i++) {
-            formData.append('proof_files', proofFiles[i]);
+            // Basic file type check for new skills
+            const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            for (let file of files) {
+                if (!validTypes.includes(file.type)) {
+                    showError('Only JPG, PNG, and PDF files are allowed');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    showError(`File "${file.name}" exceeds 5MB limit`);
+                    return;
+                }
+            }
         }
-
-        // Append other form data
-        formData.append('skill_name', document.getElementById('skills').value);
-        formData.append('hourly_rate', document.getElementById('skill-rate').value);
-        formData.append('description', document.getElementById('skill-description').value);
-        formData.append('expert_id', expertId);
         
         try {
-            const response = await fetch('/api/expert/skills', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            });
+            let response;
+            
+            if (isEditing) {
+                // Update existing skill using PUT
+                const updateData = {
+                    skill_name: document.getElementById('skills').value,
+                    hourly_rate: document.getElementById('skill-rate').value,
+                    description: document.getElementById('skill-description').value
+                };
+                
+                response = await fetch(`/api/expert/skills/${skillId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData),
+                    credentials: 'include'
+                });
+            } else {
+                // Create new skill using POST with files
+                const formData = new FormData();
+                const proofFiles = document.getElementById('skill-proof').files;
+
+                // Append all files
+                for (let i = 0; i < proofFiles.length; i++) {
+                    formData.append('proof_files', proofFiles[i]);
+                }
+
+                // Append other form data
+                formData.append('skill_name', document.getElementById('skills').value);
+                formData.append('hourly_rate', document.getElementById('skill-rate').value);
+                formData.append('description', document.getElementById('skill-description').value);
+                formData.append('expert_id', expertId);
+                
+                response = await fetch('/api/expert/skills', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+            }
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -881,10 +942,10 @@ document.addEventListener('DOMContentLoaded', function() {
             loadExpertSkills();
             loadPendingSkills();
             closeModal();
-            showSuccess(result.message || 'Skill submitted for approval');
+            showSuccess(result.message || (isEditing ? 'Skill updated successfully' : 'Skill submitted for approval'));
         } catch (error) {
             console.error('Error:', error);
-            showError('Failed to submit skill. Please try again.');
+            showError('Failed to ' + (isEditing ? 'update' : 'submit') + ' skill. Please try again.');
         }
     });
     
@@ -943,8 +1004,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function filterFeedback() {
         const filterValue = feedbackFilter.value;
-        // In a real app, you would refetch the feedback with the appropriate filter
-        // For this demo, we'll just show all feedback
+        // Show all feedback
         loadFeedback();
     }
     

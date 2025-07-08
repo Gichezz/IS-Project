@@ -60,7 +60,23 @@
 
       <!-- Expert Requests Section -->
       <section id="expert-requests" class="content-section" style="display: none;">
-        <h2>Pending Expert Approvals</h2>
+        <h2>Expert Management</h2>
+        <div class="auto-approval-controls">
+          <button id="auto-approve-experts" class="auto-approve-btn">
+            Auto-Process All Experts
+          </button>
+          <button id="view-auto-stats" class="stats-btn">
+            View Auto-Approval Stats
+          </button>
+        </div>
+        <div class="filter-options">
+          <select id="expert-filter">
+            <option value="pending" selected>Pending Only</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All Experts</option>
+          </select>
+        </div>
         <div id="expertRequestsContainer" class="requests-container">
           <!-- Dynamic content will be inserted here via JavaScript -->
         </div>
@@ -69,6 +85,14 @@
       <!-- Skill Approvals Section -->
       <section id="skill-approvals" class="content-section" style="display: none;">
         <h2>Pending Skill Approvals</h2>
+        <div class="auto-approval-controls">
+          <button id="auto-approve-skills" class="auto-approve-btn">
+            Auto-Process All Skills
+          </button>
+          <button id="view-skill-stats" class="stats-btn">
+            View Auto-Approval Stats
+          </button>
+        </div>
         <div class="filter-options">
           <select id="skill-filter">
             <option value="all">All Skills</option>

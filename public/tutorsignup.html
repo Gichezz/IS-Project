@@ -44,6 +44,9 @@
                     <input type="hidden" id="selectedSkillsInput" name="selectedSkills">
                 </div>
 
+                <label for="hourlyRate">Hourly Rate (Kshs)</label>
+                <input type="number" id="hourlyRate" name="hourlyRate" required placeholder="Enter your hourly rate e.g. 1000">
+
                 <div class="input-group">
                     <label for="file">Upload Files</label>
                     <div class="file-box" id="file-area">
@@ -79,13 +82,14 @@
             const password = document.getElementById("password").value.trim();
             const description = document.getElementById("description").value.trim();
             const selectedSkills = document.getElementById("selectedSkillsInput").value.trim();
+            const hourlyRate = document.getElementById("hourlyRate").value.trim();
             const fileInput = document.getElementById("file");
 
             const emailRegex = /^[^\s@]+@strathmore\.edu$/;
             const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
             // Validate fields
-            if (!name || !email || !password || !description) {
+            if (!name || !email || !password || !description || !hourlyRate) {
                 alert("Please fill in all required fields.");
                 return;
             }
@@ -102,6 +106,11 @@
 
             if (!selectedSkills) {
                 showToast("Please select at least one skill.", true);
+                return;
+            }
+
+            if (!hourlyRate) {
+                showToast("Please enter an hourly rate.", true);
                 return;
             }
 
@@ -132,12 +141,7 @@
             }
         });
 
-        // Handle file upload
-        document.getElementById('file-area').addEventListener('click', function () {
-            const fileInput = document.getElementById('file');
-            fileInput.value = ''; // Reset file input to allow re-uploading the same file
-            fileInput.click();
-        });
+
         // Message of Success or Fail in creating account
         function showToast(message, isError = false) {
             const toast = document.getElementById("toast");
