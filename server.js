@@ -84,12 +84,12 @@ app.get("/api/users/current", async (req, res) => {
     console.log("Full session object:", JSON.stringify(req.session, null, 2));
     
     if (!req.session || !req.session.user) {
-      console.log("❌ Session validation failed - redirecting to login");
+      console.log(" Session validation failed - redirecting to login");
       return res.status(401).json({ error: "Not logged in" });
     }
 
     const userId = req.session.user.id;
-    console.log("✅ Fetching user with ID:", userId);
+    console.log(" Fetching user with ID:", userId);
     
     // First, let's check what users exist in the database
     const [allUsers] = await db.execute("SELECT id, name, email FROM users LIMIT 5");
@@ -98,22 +98,22 @@ app.get("/api/users/current", async (req, res) => {
     const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
 
     if (rows.length > 0) {
-      console.log("✅ User found:", rows[0].name);
+      console.log(" User found:", rows[0].name);
       res.json(rows[0]);
     } else {
-      console.log("❌ User not found in database for ID:", userId);
-      console.log("🔍 Checking if user ID format is correct...");
+      console.log(" User not found in database for ID:", userId);
+      console.log(" Checking if user ID format is correct...");
       
       // Try to find user by email instead
       if (req.session.user.email) {
         const [emailRows] = await db.execute("SELECT * FROM users WHERE email = ?", [req.session.user.email]);
         if (emailRows.length > 0) {
-          console.log("✅ User found by email:", emailRows[0].name);
-          console.log("🔄 Updating session with correct user ID:", emailRows[0].id);
+          console.log(" User found by email:", emailRows[0].name);
+          console.log(" Updating session with correct user ID:", emailRows[0].id);
           req.session.user.id = emailRows[0].id;
           res.json(emailRows[0]);
         } else {
-          console.log("❌ User not found by email either");
+          console.log(" User not found by email either");
           res.status(404).json({ error: "User not found" });
         }
       } else {
@@ -121,7 +121,7 @@ app.get("/api/users/current", async (req, res) => {
       }
     }
   } catch (err) {
-    console.error("❌ Error fetching user:", err);
+    console.error(" Error fetching user:", err);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -344,12 +344,33 @@ app.post("/api/conversations", async (req, res) => {
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
-  console.log(`New connection: ${socket.id}`);
+  console.log(` New WebSocket connection: ${socket.id}`);
 
-  socket.on("authenticate", (userId) => {
-    onlineUsers.set(userId, socket.id);
-    socket.broadcast.emit("user-status-changed", { userId, status: "online" });
-  });
+    //  AUTHENTICATION
+    socket.on("authenticate", (userId) => {
+      console.log(` Authenticating user: ${userId}`);
+      onlineUsers.set(userId, socket.id);
+      socket.join(`user_${userId}`);
+      console.log(` Joined room: user_${userId}`);
+      console.log(` Online users map now:`, Array.from(onlineUsers.entries()));
+      socket.broadcast.emit("user-status-changed", { userId, status: "online" });
+    });
+
+    socket.on('session-link', ({ studentId, sessionId, link, type, message }) => {
+      const targetSocket = onlineUsers.get(studentId);
+      if (targetSocket) {
+        io.to(targetSocket).emit('session-link', {
+          sessionId,
+          link,
+          type,
+          message
+        });
+        console.log(` Emitted session-link to student ${studentId}`);
+      } else {
+        console.log(` Student ${studentId} is offline. Can't deliver session-link now.`);
+      }
+    });
+  
 
   socket.on("private-message", async ({ senderId, receiverId, content, conversationId }) => {
     try {

@@ -148,11 +148,6 @@ if (status === 'accepted') {
   console.log(` Real-time notification sent: Expert ${expert.name} accepted session ${id} for student ${currentSession.student_id}`);
 }
 
-
-
-
-
-
     res.json({ success: true, message: 'Session updated successfully' });
   } catch (error) {
     console.error('Error updating session request:', error);
@@ -238,6 +233,79 @@ router.get('/session-requests/:id/feedback', async (req, res) => {
     console.error('Error fetching session feedback:', error);
     res.status(500).json({ error: 'Failed to fetch session feedback' });
   }
+});
+
+// Add this near your other session routes
+router.post('/session-requests/:sessionId/send-link', async (req, res) => {
+    const { sessionId } = req.params;
+    const { link, type } = req.body;
+
+    try {
+        // 1. Find the session and student
+        const [session] = await executeQuery('SELECT * FROM session_requests WHERE id = ?', [sessionId]);
+        if (!session) return res.status(404).json({ error: 'Session not found' });
+
+        const expertId = session.expert_id;   // or req.session.user.id
+        const studentId = session.student_id;
+
+        //Save the link to the session
+        await executeQuery('UPDATE session_requests SET meeting_link = ? WHERE id = ?', [link, sessionId]);
+
+        // Insert notification for the student
+        const message = `You have a new ${type} link for your session: <a href="${link}" target="_blank">${link}</a>`;
+        await executeQuery(
+            'INSERT INTO notifications (user_id, message) VALUES (?, ?)',
+            [studentId, message]
+        );
+
+        // --- ADD THIS BLOCK HERE ---
+        const { v4: uuidv4 } = require('uuid');
+        // 1. Try to find the conversation (regardless of order)
+        let [conversation] = await executeQuery(
+          'SELECT id FROM conversations WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)',
+          [expertId, studentId, studentId, expertId]
+        );
+
+        let conversationId;
+        if (!conversation) {
+          // 2. If not found, create it (always store lower user ID as user1 for uniqueness)
+          const [user1, user2] = [expertId, studentId].sort();
+          conversationId = uuidv4();
+          await executeQuery(
+            'INSERT INTO conversations (id, user1_id, user2_id) VALUES (?, ?, ?)',
+            [conversationId, user1, user2]
+          );
+        } else {
+          conversationId = conversation.id;
+        }
+
+        // 3. Insert the message
+        await executeQuery(
+          'INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?, ?)',
+          [uuidv4(), conversationId, expertId, link] // <-- just the URL!
+        );
+        
+
+        if (req.app.get('io')) {
+          console.log("Emitting to room: user_" + studentId);
+
+          //  Emit a custom event to the socket server itself
+          req.app.get('io').to(`user_${studentId}`).emit('session-link', {
+            sessionId,
+            link,
+            type,
+            message: `You have a new ${type} link for your session`
+
+          });
+          console.log(`Emitted to room: user_${studentId}`);
+
+      }
+      
+        res.json({ message: `${type} link sent!` });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // 2. Skills Endpoints

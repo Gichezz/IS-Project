@@ -150,7 +150,7 @@ router.post('/register-expert', upload.array('files'), async (req, res) => {
                 await sendEmail(
                     email,
                     'Verify your SkillSwap expert email',
-                    `Hello ${name},\n\nThank you for registering as an expert on SkillSwap.\n\nPlease verify your email by clicking the following link:\n${verificationLink}\n\nAfter verifying your email, your account will be reviewed by our admin team. You will be notified once your account is approved and you can then log in.\n\nIf you did not register, please ignore this email.\n\nBest,\nSkillSwap Team`,
+                    `Hello ${name},\n\nThank you for registering as an expert on SkillSwap.\n\nPlease verify your email by clicking the following link:\n${verificationLink}\n\nAfter verifying your email, your account will be reviewed by our admin team.  ed once your account is approved and you can then log in.\n\nIf you did not register, please ignore this email.\n\nBest,\nSkillSwap Team`,
                     `<h2>Hello ${name},</h2>
                     <p>Thank you for registering as an <strong>expert</strong> on <strong>SkillSwap</strong>.</p>
                     <p>

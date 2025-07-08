@@ -9,8 +9,7 @@
   <title>SkillSwap - Expert Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/allcss/expert-dashboard.css">
-  <!-- Socket.IO Client -->
-  <script src="/socket.io/socket.io.js"></script>
+ 
 </head>
 <body data-expert-id="YOUR_EXPERT_ID">
   <div class="dashboard-container">
@@ -361,6 +360,18 @@
       </div>
     </div>
   </div>
+  <!-- Start Session Modal -->
+  <div id="start-session-modal" class="modal">
+    <div class="modal-content">
+      <h3>Start Session</h3>
+      <button id="create-zoom-link-btn" class="modal-action-btn">Create Zoom Link</button>
+      <button id="send-zoom-link-btn" class="modal-action-btn">Send Zoom Link</button>
+      <button id="google-calendar-btn" class="modal-action-btn">Schedule via Google Calendar</button>
+      <button class="close-modal">Cancel</button>
+    </div>
+  </div>
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/alljs/userSession.js"></script>
   <script src="/alljs/expert-dashboard.js"></script>
 </body>

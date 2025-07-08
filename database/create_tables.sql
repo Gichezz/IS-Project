@@ -129,3 +129,13 @@ CREATE TABLE meetings (
 
    ALTER TABLE mpesa_payments ADD COLUMN status ENUM('pending', 'success', 'failed', 'timeout') DEFAULT 'pending';
    ALTER TABLE mpesa_payments ADD COLUMN checkout_request_id VARCHAR(100);
+
+
+   ALTER TABLE users
+ADD COLUMN reset_token VARCHAR(255),
+ADD COLUMN reset_token_expires DATETIME,
+ADD COLUMN email_verified BOOLEAN DEFAULT FALSE,
+ADD COLUMN verification_token VARCHAR(255);
+
+
+ALTER TABLE session_requests ADD COLUMN meeting_link TEXT;

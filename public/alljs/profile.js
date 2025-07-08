@@ -1,3 +1,5 @@
+let socket;
+
 document.addEventListener('DOMContentLoaded', async function () {
     let currentUser;
 
@@ -10,12 +12,35 @@ document.addEventListener('DOMContentLoaded', async function () {
         const sessionData = await res.json();
         
         if (!sessionData.loggedIn || !sessionData.user) {
-            window.location.href = '/login.html';
+            showPopup("Session expired or not logged in. Redirecting to login...");
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 3000); // 3 seconds
             return;
         }
 
         // Set the current user
         currentUser = sessionData.user;
+
+        
+        socket = io("http://127.0.0.1:3010");
+        
+        console.log("Authenticating with ID:", currentUser.id);
+        console.log('Socket:', socket);
+        socket.emit('authenticate', currentUser.id);
+
+// Listen for real-time Zoom link notifications
+        socket.on('session-link', (data) => {
+            console.log('ZOOM EVENT:', data);
+           
+            console.log('About to call showPopup with:', data.link);
+        
+            
+            showPopup(`Zoom: <a href="${data.link}" target="_blank">Join</a>`);
+          });
+          
+        
+        
 
         // Load user-related data
         await loadProfileData(currentUser.id);
@@ -23,8 +48,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         setupEventListeners();
 
     } catch (err) {
-      console.error('Session or profile load failed:', error);
-      window.location.href = '/login.html';
+      console.error('Session or profile load failed:', err);
+      showPopup("Session error. Redirecting to login...");
+      setTimeout(() => {
+        window.location.href = '/login.html';
+      }, 10000); // 3 seconds
     }
 });
 
@@ -217,3 +245,25 @@ async function handleMarkCompleted(button) {
         alert('Failed to mark session as completed. Please try again.');
     }
 }
+
+function showPopup(message) {
+    console.log(" showPopup() called with message:", message); // <--- DEBUG
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup';
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'popup-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = () => popup.remove();
+    popup.appendChild(closeBtn);
+    // Add message
+    const msgDiv = document.createElement('div');
+    msgDiv.innerHTML = message;
+    popup.appendChild(msgDiv);
+    document.body.appendChild(popup);
+    setTimeout(() => {
+        if (document.body.contains(popup)) popup.remove();
+    }, 60000);
+}
+  
+

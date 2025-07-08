@@ -10,7 +10,7 @@ body {
   font-family: 'Segoe UI', sans-serif;
   background: url('/images/pexels-cup-of-couple-6177598.jpg') no-repeat center center fixed;
   background-size: cover;
-  min-height: 100vh; 
+  min-height: 130vh; 
   color: white;
   position: relative;
 }

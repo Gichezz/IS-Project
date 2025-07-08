@@ -239,3 +239,79 @@ body {
     justify-content: flex-end;
   }
 }
+.custom-popup {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  min-width: 280px;
+  max-width: 90vw;
+  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+  color: #fff;
+  padding: 20px 32px 20px 20px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(44, 62, 80, 0.25), 0 1.5px 6px rgba(0,0,0,0.12);
+  z-index: 9999;
+  font-size: 16px;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  animation: popup-slide-in 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+  border-left: 6px solid #4fc3f7;
+}
+
+.custom-popup a {
+  color: #4fc3f7;
+  text-decoration: none;
+  font-weight: 600;
+  background: linear-gradient(90deg, #4fc3f7 0%, #00bcd4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: text-decoration 0.2s, color 0.2s;
+}
+.custom-popup a:hover {
+  text-decoration: underline;
+  color: #00bcd4;
+  -webkit-text-fill-color: #00bcd4;
+}
+
+.custom-popup .popup-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: auto;
+  margin-top: -4px;
+  margin-right: -8px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.custom-popup .popup-close:hover {
+  opacity: 1;
+  color: #4fc3f7;
+}
+
+@keyframes popup-slide-in {
+  from {
+    transform: translateY(40px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .custom-popup {
+    right: 10px;
+    left: 10px;
+    min-width: unset;
+    max-width: 95vw;
+    padding: 16px 16px 16px 16px;
+    font-size: 15px;
+  }
+}

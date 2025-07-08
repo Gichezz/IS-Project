@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.start-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const sessionId = this.closest('.session-card').getAttribute('data-session-id');
-                startSession(sessionId);
+                showStartSessionModal(sessionId); 
             });
         });
         
@@ -693,6 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         skillModal.classList.add('active');
     }
+    
     
     function editSkill(skillId) {
         console.log('Attempting to edit skill ID:', skillId); // Debug log
@@ -1006,7 +1007,81 @@ document.addEventListener('DOMContentLoaded', function() {
         alert(message); // notification system
     }
 
+    function showStartSessionModal(sessionId) {
+        const modal = document.getElementById('start-session-modal');
+        modal.classList.add('active');
+
+        // Remove previous listeners to avoid duplicates
+        const newModal = modal.cloneNode(true);
+        modal.parentNode.replaceChild(newModal, modal);
+
+        // Add event listeners for each button
+        document.getElementById('create-zoom-link-btn').onclick = function() {
+            window.open('https://zoom.us/meeting/schedule', '_blank');
+            showSuccess('Redirected to Zoom to create a meeting link. Share the link with your student!');
+            
+        };
+
+        document.getElementById('send-zoom-link-btn').onclick = function() {
+            const zoomLink = prompt('Paste your Zoom meeting link:');
+            if (zoomLink && zoomLink.includes('zoom.us')) {
+                // Send the link to the student (see next step)
+                sendSessionLinkToStudent(sessionId, zoomLink, 'Zoom');
+                showSuccess('Zoom link sent to student!');
+                closeModal();
+            } else {
+                showError('Please enter a valid Zoom link.');
+            }
+        };
+
+        document.getElementById('google-calendar-btn').onclick = function() {
+            const topic = prompt('Meeting Topic:', 'Tutoring Session');
+            const date = prompt('Date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+            const time = prompt('Time (HH:MM):', '15:00');
+            const duration = prompt('Duration (minutes):', '60');
+            if (!topic || !date || !time || !duration) return;
+            const start = new Date(`${date}T${time}:00`);
+            const end = new Date(start.getTime() + parseInt(duration) * 60000);
+            const formatForCalendar = (d) =>
+                d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            const calendarUrl = `https://calendar.google.com/calendar/u/0/r/eventedit?text=${encodeURIComponent(topic)}&dates=${formatForCalendar(start)}/${formatForCalendar(end)}&details=${encodeURIComponent('Tutoring Session')}`;
+            window.open(calendarUrl, '_blank');
+            showSuccess('Redirected to Google Calendar. Don\'t forget to share the invite link with your student!');
+            
+        };
+
+        // Cancel button
+        newModal.querySelector('.close-modal').onclick = closeModal;
+    }
+
+    function sendSessionLinkToStudent(sessionId, link, type) {
+        // Log the link sending action for debugging
+        console.log(`Sending ${type} link to student. Session ID: ${sessionId}, Link: ${link}`);
+        // You can use fetch to POST to your backend, or use Socket.IO if you have it set up
+        // Example using fetch:
+        fetch(`/api/expert/session-requests/${sessionId}/send-link`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link, type })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Optionally show a notification/alert
+            showSuccess(`${type} link sent to student!`);
+        })
+        .catch(err => {
+            showError('Failed to send link to student.');
+        });
+    }
+
     // Initialize the dashboard
     initDashboard();
+
+    socket.onAny((event, ...args) => {
+        console.log('Socket event received:', event, args);
+    });
+
+    console.log("About to emit session-link to room: user_" + studentId, "Current rooms:", io.sockets.adapter.rooms);
 
 });

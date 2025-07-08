@@ -10,8 +10,7 @@
 </head>
 <body>
     <div class="app-container">
-        <header class="app-header">
-            <h1><i class="fas fa-exchange-alt"></i> SwapSecure Chat</h1>
+        <header class="app-header"><i class="fas fa-exchange-alt" id="role-redirect-icon" title="Go to your dashboard" style="cursor:pointer;"></i></h1>
             <div class="user-info">
                 <span id="current-user">User123</span>
                 <div class="status-indicator online"></div>
@@ -135,7 +134,30 @@
             </div>
         </div>
     </div>
+    <script>
+        document.getElementById('role-redirect-icon').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/users/current', {
+      credentials: 'include'
+    });
+    const user = await res.json();
 
+    if (user.role === 'student') {
+      window.location.href = '/profile.html'; // replace with your actual student page
+    } else if (user.role === 'expert') {
+      window.location.href = '/expert-dashboard.html'; // replace with your actual expert page
+    } else {
+      alert('Unknown role. Cannot redirect.');
+    }
+  } catch (error) {
+    console.error('Failed to redirect based on role:', error);
+    alert('Session error. Please log in again.');
+    window.location.href = '/login.html';
+  }
+});
+
+
+      </script>
 
 
 
