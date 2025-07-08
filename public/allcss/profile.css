@@ -239,3 +239,121 @@ body {
     justify-content: flex-end;
   }
 }
+
+/* Feedback Modal Styles */
+.modal {
+  display: flex;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 10px;
+  max-width: 400px;
+  width: 90vw;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  position: relative;
+  animation: fadeIn 0.2s;
+}
+@keyframes fadeIn {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+}
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--light-text);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close-modal:hover {
+  color: var(--error-color);
+}
+.form-group {
+  margin-bottom: 1.2rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+.star-rating {
+  display: flex;
+  flex-direction: row;
+  gap: 0.2rem;
+  font-size: 1.7rem;
+  margin-bottom: 0.5rem;
+}
+.star-rating span {
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.star-rating span.selected {
+  color: #ffc107;
+}
+
+#feedback-comments {
+  width: 100%;
+  min-height: 70px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  padding: 0.7rem;
+  font-size: 1rem;
+  resize: vertical;
+  background: var(--secondary-color);
+  color: var(--text-color);
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+.form-actions .btn {
+  min-width: 110px;
+}
+.form-actions .primary-btn {
+  background: var(--primary-color);
+  color: #fff;
+}
+.form-actions .primary-btn:hover {
+  background: #3a5bef;
+}
+.form-actions .secondary-btn {
+  background: #fff;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+.form-actions .secondary-btn:hover {
+  background: rgba(74, 107, 255, 0.07);
+}

@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://127.0.0.1:3010",
+    origin: ['http://127.0.0.1:3010', 'http://localhost:3010'],
     credentials: true,
     methods: ["GET", "POST"]
   }
@@ -45,7 +45,7 @@ app.use(express.json());
 
 //  CORS Setup (BEFORE session)
 app.use(cors({
-  origin: 'http://127.0.0.1:3010', // Set exact origin
+  origin: ['http://127.0.0.1:3010', 'http://localhost:3010'],
   credentials: true
 }));
 
@@ -84,12 +84,12 @@ app.get("/api/users/current", async (req, res) => {
     console.log("Full session object:", JSON.stringify(req.session, null, 2));
     
     if (!req.session || !req.session.user) {
-      console.log("❌ Session validation failed - redirecting to login");
+      console.log(" Session validation failed - redirecting to login");
       return res.status(401).json({ error: "Not logged in" });
     }
 
     const userId = req.session.user.id;
-    console.log("✅ Fetching user with ID:", userId);
+    console.log(" Fetching user with ID:", userId);
     
     // First, let's check what users exist in the database
     const [allUsers] = await db.execute("SELECT id, name, email FROM users LIMIT 5");
@@ -98,22 +98,22 @@ app.get("/api/users/current", async (req, res) => {
     const [rows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
 
     if (rows.length > 0) {
-      console.log("✅ User found:", rows[0].name);
+      console.log(" User found:", rows[0].name);
       res.json(rows[0]);
     } else {
-      console.log("❌ User not found in database for ID:", userId);
-      console.log("🔍 Checking if user ID format is correct...");
+      console.log(" User not found in database for ID:", userId);
+      console.log(" Checking if user ID format is correct...");
       
       // Try to find user by email instead
       if (req.session.user.email) {
         const [emailRows] = await db.execute("SELECT * FROM users WHERE email = ?", [req.session.user.email]);
         if (emailRows.length > 0) {
-          console.log("✅ User found by email:", emailRows[0].name);
-          console.log("🔄 Updating session with correct user ID:", emailRows[0].id);
+          console.log(" User found by email:", emailRows[0].name);
+          console.log(" Updating session with correct user ID:", emailRows[0].id);
           req.session.user.id = emailRows[0].id;
           res.json(emailRows[0]);
         } else {
-          console.log("❌ User not found by email either");
+          console.log(" User not found by email either");
           res.status(404).json({ error: "User not found" });
         }
       } else {
@@ -121,7 +121,7 @@ app.get("/api/users/current", async (req, res) => {
       }
     }
   } catch (err) {
-    console.error("❌ Error fetching user:", err);
+    console.error(" Error fetching user:", err);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -133,9 +133,9 @@ app.get("/api/users/current", async (req, res) => {
 app.use((req, res, next) => {
     // Paths that don't require authentication
     const publicPaths = ['/login', '/session', '/login.html', '/studentsignup.html', '/tutorsignup.html', 
-      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html','/api/mpesa/stk/callback', 
-      '/api/users/current' ,'/connect.html',
-      '/reset-password', '/resetPassword.html', '/verify-email'];
+      '/register-student','/register-expert', '/register-admin', '/forgot-password', '/forgotPassword.html',
+      '/api/mpesa/stk/callback', '/api/users/current', '/reset-password', '/resetPassword.html',
+       '/verify-email'];
     
     if (publicPaths.includes(req.path)) {
         return next();
@@ -143,6 +143,7 @@ app.use((req, res, next) => {
     
     // Check if session exists and has user data
     if (!req.session || !req.session.user) {
+      console.warn('Blocked request to:', req.path);
         if (req.accepts('html')) {
             return res.redirect('/login.html');
         }

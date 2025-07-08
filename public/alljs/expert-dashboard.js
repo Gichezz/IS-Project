@@ -1,4 +1,26 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    let currentUser;
+    try {
+        const res = await fetch('/session', { credentials: 'include' });
+        const sessionData = await res.json();
+        if (!sessionData.loggedIn || !sessionData.user) {
+            window.location.href = '/login.html';
+            return;
+        }
+        currentUser = sessionData.user;
+        // Now fetch the expert's details
+        const userRes = await fetch(`/api/users/${currentUser.id}`, { credentials: 'include' });
+        const userData = await userRes.json();
+        // Update the welcome message
+        const welcomeEl = document.getElementById('welcome-expert');
+        if (welcomeEl && userData.name) {
+            welcomeEl.textContent = `Welcome ${userData.name}`;
+        }
+    } catch (err) {
+        console.error('Failed to load expert info:', err);
+        window.location.href = '/login.html';
+    }
+
     // Initialize Socket.IO connection
     const socket = io("http://127.0.0.1:3010");
     
@@ -12,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Listen for session accepted notifications (for experts to see when they accept sessions)
     socket.on('session-accepted', (notification) => {
-        console.log('🔔 Session accepted notification received:', notification);
+        console.log(' Session accepted notification received:', notification);
         
         // Show notification to expert
         showSessionAcceptedNotification(notification);
@@ -27,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationDiv.className = 'notification-popup success';
         notificationDiv.innerHTML = `
             <div class="notification-content">
-                <div class="notification-icon">✅</div>
+                <div class="notification-icon"></div>
                 <div class="notification-text">
                     <h4>Session Accepted!</h4>
                     <p>You have accepted the session request for <strong>${notification.skillRequested}</strong>.</p>
@@ -412,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 const sessionId = this.closest('.session-card').getAttribute('data-session-id');
                 updateSessionStatus(sessionId, 'accepted');
-                // ✅ Emit socket notification to student
+                // Emit socket notification to student
             socket.emit("session-accepted", {
                 expertId: currentUser.id,
                 studentId: studentId,
@@ -421,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 time: sessionTime || new Date().toISOString()
             });
 
-            // ✅ Feedback to expert
+            // Feedback to expert
             alert("Session accepted and student notified!");
             });
         });
