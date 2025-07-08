@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     fetch(`/api/mpesa/payment-status/${checkoutID}`)
                         .then(res => res.json())
                         .then(result => {
-                            console.log("📡 Polling response:", result);
+                            console.log(" Polling response:", result);
 
                             if (result.found && result.status) {
                                 //  Only stop polling if result is final (success, failed, or timeout)

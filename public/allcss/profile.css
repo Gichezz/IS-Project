@@ -246,7 +246,7 @@ body {
   right: 30px;
   min-width: 280px;
   max-width: 90vw;
-  background: linear-gradient(135deg, #232526 0%, #414345 100%);
+  background: linear-gradient(135deg, #11a0e7 0%, #6688ab 100%);
   color: #fff;
   padding: 20px 32px 20px 20px;
   border-radius: 16px;
@@ -262,10 +262,10 @@ body {
 }
 
 .custom-popup a {
-  color: #4fc3f7;
+  color: #fff;
   text-decoration: none;
   font-weight: 600;
-  background: linear-gradient(90deg, #4fc3f7 0%, #00bcd4 100%);
+  background: linear-gradient(90deg, #fbfbfb 0%, #adf2fb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -273,8 +273,8 @@ body {
 }
 .custom-popup a:hover {
   text-decoration: underline;
-  color: #00bcd4;
-  -webkit-text-fill-color: #00bcd4;
+  color: #021113;
+  -webkit-text-fill-color: #021518;
 }
 
 .custom-popup .popup-close {
@@ -297,11 +297,11 @@ body {
 
 @keyframes popup-slide-in {
   from {
-    transform: translateY(40px) scale(0.98);
+    transform: translateX(40px) scale(0.98);
     opacity: 0;
   }
   to {
-    transform: translateY(0) scale(1);
+    transform: translateX(0) scale(1);
     opacity: 1;
   }
 }

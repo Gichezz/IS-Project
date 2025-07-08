@@ -377,7 +377,7 @@ io.on("connection", (socket) => {
 
   socket.on("private-message", async ({ senderId, receiverId, content, conversationId }) => {
     try {
-      const messageId = uuidv4(); // 👈 Generate unique message ID
+      const messageId = uuidv4(); //  Generate unique message ID
 const [result] = await db.execute(
   "INSERT INTO messages (id, conversation_id, sender_id, content) VALUES (?, ?, ?, ?)",
   [messageId, conversationId, senderId, content]

@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('User authenticated:', userData.name);
             return userData;
         } catch (err) {
-            console.error('❌ Error fetching user from session:', err);
+            console.error(' Error fetching user from session:', err);
             if (window.location.pathname !== '/login.html') {
                 console.log('Authentication failed, redirecting to login');
                 window.location.href = "/login.html";
@@ -186,12 +186,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         messages.forEach(addMessageToUI);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        // ✅ Mark as read when user loads messages
+        //  Mark as read when user loads messages
     markAsRead(activeConversation.id);
     }
 
     function addMessageToUI(msg) {
-        console.log('✉️ Message received:', msg, ' | Current user:', currentUser.id);
+        console.log(' Message received:', msg, ' | Current user:', currentUser.id);
         const senderId = msg.senderId || msg.sender_id;
         const isCurrentUser = senderId === currentUser.id; 
 
@@ -409,7 +409,7 @@ async function scheduleMeeting() {
         `;
         document.body.appendChild(modal);
 
-         // ✅ Event Listeners
+         //  Event Listeners
         document.getElementById('cancel-attachment').addEventListener('click', () => modal.remove());
     document.getElementById('send-zoom-btn').addEventListener('click', sendZoomLink);
     document.getElementById('schedule-meeting-btn').addEventListener('click', scheduleMeeting);
@@ -524,9 +524,9 @@ async function scheduleMeeting() {
       }
     });
   
-    // ✅ Session accepted notification listener
+    // Session accepted notification listener
     socket.on("session-accepted", (notification) => {
-      console.log("🎉 Session accepted notification:", notification);
+      console.log(" Session accepted notification:", notification);
   
       const alertBox = document.createElement("div");
       alertBox.className = "session-notification";

@@ -122,7 +122,7 @@
         }
         
         .btn {
-            background-color: var(--primary-color);
+            background: linear-gradient(90deg, #04300b 0%, #228008 100%);
             color: white;
             border: none;
             padding: 14px;
@@ -135,7 +135,7 @@
         }
         
         .btn:hover {
-            background-color: #004d00;
+            background: linear-gradient(90deg, #045407 0%, );
         }
         
         .loading {
@@ -185,6 +185,39 @@
             text-align: center;
             grid-column: 1 / -1;
         }
+
+        .unique-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: linear-gradient(90deg, #3e29f5 0%, #228008 100%);
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding: 12px 22px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(4, 70, 27, 0.15), 0 2px 8px rgba(255, 94, 98, 0.10);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  z-index: 100;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+.unique-back-btn i {
+  font-size: 1.2em;
+  margin-right: 6px;
+}
+
+.unique-back-btn:hover {
+  background: linear-gradient(90deg, #045407 0%, #279c40 100%);
+  color: #fff;
+  transform: translateY(1px) scale(1.04) ;
+  box-shadow: 0 8px 24px rgba(255, 94, 98, 0.18), 0 4px 12px rgba(255, 152, 0, 0.12);
+  text-decoration: none;
+}
 
         @media (max-width: 768px) {
             .payment-container {
