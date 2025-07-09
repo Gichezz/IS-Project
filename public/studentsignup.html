@@ -103,34 +103,30 @@
                     body: JSON.stringify({ name, email, password, selectedSkills })
                 });
 
-                const result = await response.json();  // this fails if not JSON
-                console.log("Server responded with:", result);
-
-                if (result.success) {
-                    showToast("Account created successfully!");
-                    setTimeout(() => {
-                    window.location.href = "/login.html";
-                    }, 1500);
-                } else {
-                    showToast("Registration failed", true);
-                }
-
-                } catch (error) {
-                console.error("Fetch Error:", error);
-                showToast("An error occurred: " + error.message, true);
-                }
-
-            try {
                 if (response.redirected) {
                     showToast("Registration successful! Please check your email to verify your account.");
                     setTimeout(() => {
                         window.location.href = response.url;
                     }, 1500);
+                } else if (response.ok) {
+                    const result = await response.json();
+                    console.log("Server responded with:", result);
+                    
+                    if (result.success) {
+                        showToast("Account created successfully!");
+                        setTimeout(() => {
+                            window.location.href = "/login.html";
+                        }, 1500);
+                    } else {
+                        showToast("Registration failed", true);
+                    }
                 } else {
-                    const msg = await response.text();
-                    showToast("Registration failed: " + msg, true);
+                    const errorText = await response.text();
+                    showToast("Registration failed: " + errorText, true);
                 }
+
             } catch (error) {
+                console.error("Fetch Error:", error);
                 showToast("An error occurred: " + error.message, true);
             }
 
